@@ -29,70 +29,98 @@
  * @param $dump
  *
  */
-function logtivity_dd($dump) {
-	echo "<pre>";
-	var_export($dump);
-	echo "</pre>";
-	die();
+function logtivity_dd($dump)
+{
+    echo "<pre>";
+    var_export($dump);
+    echo "</pre>";
+    die();
 }
 
 /**
  * Load a view and pass variables into it
  *
  * To ouput a view you would want to echo it
- * 
- * @param  string $fileName excluding file extension
- * @param  array  $vars
+ *
+ * @param string $fileName excluding file extension
+ * @param array  $vars
+ *
  * @return string
  */
-function logtivity_view($fileName, $vars = array()) {
+function logtivity_view(string $fileName, array $vars = []): string
+{
 
     foreach ($vars as $key => $value) {
-        
+
         ${$key} = $value;
 
     }
 
     ob_start();
 
-    include( dirname(__FILE__) . '/../views/' . str_replace('.', '/', $fileName) . '.php');
+    include(dirname(__FILE__) . '/../views/' . str_replace('.', '/', $fileName) . '.php');
 
     return ob_get_clean();
 }
 
 /**
  * Get Site API Key
- * 
+ *
  * @return string
  */
-function logtivity_get_api_key() {
+function logtivity_get_api_key(): string
+{
     return sanitize_text_field(
         (new Logtivity_Options)->getOption('logtivity_site_api_key')
     );
 }
 
-function logtivity_get_the_title($post_id) {
-    $wptexturize = remove_filter( 'the_title', 'wptexturize' );
-    
-    $title = get_the_title($post_id);
+/**
+ * @param $postId
+ *
+ * @return string
+ */
+function logtivity_get_the_title(int $postId): string
+{
+    $wptexturize = remove_filter('the_title', 'wptexturize');
 
-    if ( $wptexturize ) {
-        add_filter( 'the_title', 'wptexturize' );
+    $title = get_the_title($postId);
+
+    if ($wptexturize) {
+        add_filter('the_title', 'wptexturize');
     }
 
     return $title;
 }
 
-function logtivity_get_api_url()
+/**
+ * @return string
+ */
+function logtivity_get_api_url(): string
 {
     if (defined('LOGTIVITY_API_URL')) {
-        return LOGTIVITY_API_URL;
+        $customUrl = rtrim(sanitize_url(LOGTIVITY_API_URL), '/');
     }
 
-    return 'https://api.logtivity.io';
+    return $customUrl ?? 'https://api.logtivity.io';
 }
 
-function logtivity_has_site_url_changed()
+/**
+ * @return string
+ */
+function logtivity_get_app_url(): string
+{
+    if (defined('LOGTIVITY_APP_URL')) {
+        $customUrl = rtrim(sanitize_url(LOGTIVITY_APP_URL), '/');
+    }
+
+    return $customUrl ?? 'https://app.logtivity.io';
+}
+
+/**
+ * @return bool
+ */
+function logtivity_has_site_url_changed(): bool
 {
     $hash = (new Logtivity_Options)->urlHash();
 
@@ -103,24 +131,21 @@ function logtivity_has_site_url_changed()
     return $hash !== md5(home_url());
 }
 
-function logtivity_get_error_levels()
+/**
+ * @return array
+ */
+function logtivity_get_error_levels(): array
 {
-    return [
-        E_ALL => 'E_ALL',
-        E_USER_DEPRECATED => 'E_USER_DEPRECATED',
-        E_DEPRECATED => 'E_DEPRECATED',
-        E_RECOVERABLE_ERROR => 'E_RECOVERABLE_ERROR',
-        E_STRICT => 'E_STRICT',
-        E_USER_NOTICE => 'E_USER_NOTICE',
-        E_USER_WARNING => 'E_USER_WARNING',
-        E_USER_ERROR => 'E_USER_ERROR',
-        E_COMPILE_WARNING => 'E_COMPILE_WARNING',
-        E_COMPILE_ERROR => 'E_COMPILE_ERROR',
-        E_CORE_WARNING => 'E_CORE_WARNING',
-        E_CORE_ERROR => 'E_CORE_ERROR',
-        E_NOTICE => 'E_NOTICE',
-        E_PARSE => 'E_PARSE',
-        E_WARNING => 'E_WARNING',
-        E_ERROR => 'E_ERROR',
-    ];
+    static $errorLevels = null;
+    if ($errorLevels === null) {
+        $errorLevels = [];
+        $allCodes    = get_defined_constants();
+        foreach ($allCodes as $code => $constant) {
+            if (strpos($code, 'E_') === 0) {
+                $errorLevels[$constant] = $code;
+            }
+        }
+    }
+
+    return $errorLevels;
 }

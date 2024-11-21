@@ -30,7 +30,7 @@
 	<p><strong>Welcome to Logtivity!</strong> Here's how it works:</p>
 
 	<ol>
-		<li>Make sure you have an account set up with <a target="_blank" href="https://logtivity.io/">Logtivity</a></li>
+		<li>Make sure you have an account set up with <a target="_blank" href="https://logtivity.io/">Logtivity</a>.</li>
 		<li><a target="_blank" href="https://logtivity.io/docs/connect-your-site-to-logtivity/">Create a site</a> inside the Logtivity app and copy your API key.</li>
 		<li>Paste your API key in your <a href="<?php echo admin_url( 'admin.php?page=logtivity-settings' ) ?>">plugin settings page</a>.</li>
 		<li>Configure your options and you're good to go!</li>

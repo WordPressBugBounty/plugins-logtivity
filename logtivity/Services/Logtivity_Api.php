@@ -26,28 +26,28 @@ class Logtivity_Api
 {
 	/**
 	 * Option class to access the plugin settings
-	 * 
+	 *
 	 * @var object
 	 */
 	protected $options;
 
 	/**
 	 * Should we wait to return the response from the API?
-	 * 
+	 *
 	 * @var boolean
 	 */
 	public $waitForResponse = true;
 
 	/**
 	 * Definitely don't wait for a response.
-	 * 
+	 *
 	 * @var boolean
 	 */
 	public $asyncOverride = false;
 
 	/**
 	 * The API key for either the site or team
-	 * 
+	 *
 	 * @var string
 	 */
 	public $api_key;
@@ -59,7 +59,7 @@ class Logtivity_Api
 
 	/**
 	 * Get the API URL for the Logtivity endpoint
-	 * 
+	 *
 	 * @return string
 	 */
 	public function getEndpoint($endpoint)
@@ -91,30 +91,29 @@ class Logtivity_Api
 		return $this;
 	}
 
-	/**	
+	/**
 	 * Make a request to the Logtivity API
-	 * 
+	 *
 	 * @param  string $url
 	 * @param  array $body
 	 * @param  string $method
+     *
 	 * @return mixed $response
 	 */
-	public function makeRequest($url, $body, $method = 'POST')
+	public function makeRequest(string $url, array $body, string $method = 'POST')
 	{
 		if (!$this->api_key) {
 			$this->api_key = logtivity_get_api_key();
 		}
-
 		if (!$this->api_key) {
-			return;
+			return null;
 		}
 
 		if (!$this->options->urlHash()) {
 			$this->options->update(['logtivity_url_hash' => md5(home_url())], false);
 		}
-
 		if (logtivity_has_site_url_changed()) {
-			return;
+			return null;
 		}
 
 		$shouldLogLatestResponse = !$this->asyncOverride && ($this->waitForResponse || $this->options->shouldLogLatestResponse());
@@ -177,10 +176,10 @@ class Logtivity_Api
 		}
 	}
 
-	/**	
-	 * You cannot call an extra update_option during a widget update so we make 
+	/**
+	 * You cannot call an extra update_option during a widget update so we make
 	 * sure not to log the most recent log response in this case.
-	 * 
+	 *
 	 * @return bool
 	 */
 	private function notUpdatingWidgetInCustomizer()

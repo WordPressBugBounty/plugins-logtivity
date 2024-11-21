@@ -24,301 +24,301 @@
 
 class Logtivity_Logger extends Logtivity_Api
 {
-	use Logtivity_User_Logger_Trait;
-	
-	/**
-	 * Can this instance log something
-	 * 
-	 * @var bool
-	 */
-	public $active = true;
+    use Logtivity_User_Logger_Trait;
 
-	/**
-	 * The action for the given log
-	 * 
-	 * @var string
-	 */
-	public $action;
+    /**
+     * Can this instance log something
+     *
+     * @var bool
+     */
+    public $active = true;
 
-	/**
-	 * The context for the given log. Could be a post title, or plugin 
-	 * name, or anything to help give this log some more context.
-	 * 
-	 * @var string
-	 */
-	public $context;
-	
-	/**	
-	 * The post type, if relevant for a given log
-	 * 
-	 * @var string
-	 */
-	public $post_type;
+    /**
+     * The action for the given log
+     *
+     * @var string
+     */
+    public $action;
 
-	/**	
-	 * The post ID, if relevant for a given log
-	 * 
-	 * @var integer
-	 */
-	public $post_id;
+    /**
+     * The context for the given log. Could be a post title, or plugin
+     * name, or anything to help give this log some more context.
+     *
+     * @var string
+     */
+    public $context;
 
-	/**	
-	 * Extra info to pass to the log
-	 * 
-	 * @var array
-	 */
-	public $meta = [];
+    /**
+     * The post type, if relevant for a given log
+     *
+     * @var string
+     */
+    public $post_type;
 
-	/**	
-	 * Extra user meta to pass to the log
-	 * 
-	 * @var array
-	 */
-	public $userMeta = [];
+    /**
+     * The post ID, if relevant for a given log
+     *
+     * @var integer
+     */
+    public $post_id;
 
-	/**
-	 * When storing a log, generally we want to do this asynchronously
-	 * and so we won't wait for a response from the API by default.
-	 * 
-	 * @var boolean
-	 */
-	public $waitForResponse = false;
+    /**
+     * Extra info to pass to the log
+     *
+     * @var array
+     */
+    public $meta = [];
 
-	/**	
-	 * Set the user and call the parent constructor
-	 */
-	public function __construct($user_id = null)
-	{
-		$this->setUser($user_id);
+    /**
+     * Extra user meta to pass to the log
+     *
+     * @var array
+     */
+    public $userMeta = [];
 
-		parent::__construct();
-	}
+    /**
+     * When storing a log, generally we want to do this asynchronously
+     * and so we won't wait for a response from the API by default.
+     *
+     * @var boolean
+     */
+    public $waitForResponse = false;
 
-	/**
-	 * Way into class. 
-	 * 
-	 * @param  string $action
-	 * @param  string $meta
-	 * @param  string $user_id
-	 * @return Logtivity_Logger::send()
-	 */
-	public static function log($action = null, $meta = null, $user_id = null)
-	{
-		$Logtivity_logger = new Logtivity_Logger($user_id);
+    /**
+     * Set the user and call the parent constructor
+     */
+    public function __construct($user_id = null)
+    {
+        $this->setUser($user_id);
 
-		if(is_null($action)) {
+        parent::__construct();
+    }
 
-			return new $Logtivity_logger;
+    /**
+     * Way into class.
+     *
+     * @param string $action
+     * @param string $meta
+     * @param string $user_id
+     * @return Logtivity_Logger::send()
+     */
+    public static function log($action = null, $meta = null, $user_id = null)
+    {
+        $Logtivity_logger = new Logtivity_Logger($user_id);
 
-		}
+        if (is_null($action)) {
 
-		$Logtivity_logger->setAction($action);
+            return new $Logtivity_logger;
 
-		if ($meta) {
-			$Logtivity_logger->addMeta($meta['key'], $meta['value']);
-		}
+        }
 
-		return $Logtivity_logger->send();
-	}
+        $Logtivity_logger->setAction($action);
 
-	/**
-	 * Set the action string before sending
-	 * 
-	 * @param string
-	 */
-	public function setAction($action)
-	{
-		$this->action = $action;
+        if ($meta) {
+            $Logtivity_logger->addMeta($meta['key'], $meta['value']);
+        }
 
-		return $this;
-	}
+        return $Logtivity_logger->send();
+    }
 
-	/**
-	 * Set the context string before sending.
-	 * 
-	 * @param string
-	 */
-	public function setContext($context)
-	{
-		$this->context = $context;
+    /**
+     * Set the action string before sending
+     *
+     * @param string
+     */
+    public function setAction($action)
+    {
+        $this->action = $action;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the post_type string before sending.
-	 * 
-	 * @param string
-	 */
-	public function setPostType($post_type)
-	{
-		$this->post_type = $post_type;
+    /**
+     * Set the context string before sending.
+     *
+     * @param string
+     */
+    public function setContext($context)
+    {
+        $this->context = $context;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Set the post_id before sending.
-	 * 
-	 * @param integer
-	 */
-	public function setPostId($post_id)
-	{
-		$this->post_id = $post_id;
+    /**
+     * Set the post_type string before sending.
+     *
+     * @param string
+     */
+    public function setPostType($post_type)
+    {
+        $this->post_type = $post_type;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Add to an array any additional information you would like to pass to this log.
-	 * 
-	 * @param string $key
-	 * @param mixed $value
-	 * @return $this
-	 */
-	public function addMeta($key, $value)
-	{
-		$this->meta[] = [
-			'key' => $key,
-			'value' => $value,
-		];
+    /**
+     * Set the post_id before sending.
+     *
+     * @param integer
+     */
+    public function setPostId($post_id)
+    {
+        $this->post_id = $post_id;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**	
-	 * Add the meta if the first condition is true
-	 * 
-	 * @param boolean $condition
-	 * @param string  $key    
-	 * @param mixed  $value
-	 */
-	public function addMetaIf($condition, $key, $value)
-	{
-		if ($condition) {
-			$this->addMeta($key, $value);
-		}
+    /**
+     * Add to an array any additional information you would like to pass to this log.
+     *
+     * @param string $key
+     * @param mixed  $value
+     * @return $this
+     */
+    public function addMeta($key, $value)
+    {
+        $this->meta[] = [
+            'key'   => $key,
+            'value' => $value,
+        ];
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Add to an array of user meta you would like to pass to this log.
-	 * 
-	 * @param string $key
-	 * @param mixed $value
-	 * @return $this
-	 */
-	public function addUserMeta($key, $value)
-	{
-		$this->userMeta[$key] = $value;
+    /**
+     * Add the meta if the first condition is true
+     *
+     * @param boolean $condition
+     * @param string  $key
+     * @param mixed   $value
+     */
+    public function addMetaIf($condition, $key, $value)
+    {
+        if ($condition) {
+            $this->addMeta($key, $value);
+        }
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**	
-	 * Should we wait and record the response from logtivity.
-	 * 
-	 * @return $this
-	 */
-	public function waitForResponse()
-	{
-		$this->waitForResponse = true;
+    /**
+     * Add to an array of user meta you would like to pass to this log.
+     *
+     * @param string $key
+     * @param mixed  $value
+     * @return $this
+     */
+    public function addUserMeta($key, $value)
+    {
+        $this->userMeta[$key] = $value;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Stop this instance of Logtivity_Logger from logging
-	 * 
-	 * @return $this
-	 */
-	public function stop()
-	{
-		$this->active = false;
+    /**
+     * Should we wait and record the response from logtivity.
+     *
+     * @return $this
+     */
+    public function waitForResponse()
+    {
+        $this->waitForResponse = true;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	/**
-	 * Send the logged data to Logtivity
-	 * 
-	 * @return void
-	 */
-	public function send()
-	{
-		$this->maybeAddProfileLink();
+    /**
+     * Stop this instance of Logtivity_Logger from logging
+     *
+     * @return $this
+     */
+    public function stop()
+    {
+        $this->active = false;
 
-		do_action('wp_logtivity_instance', $this);
+        return $this;
+    }
 
-		if (!$this->active) {
-			return;
-		}
+    /**
+     * Send the logged data to Logtivity
+     *
+     * @return mixed
+     */
+    public function send()
+    {
+        $this->maybeAddProfileLink();
 
-		return $this->makeRequest('/logs/store', $this->getData());
-	}
+        do_action('wp_logtivity_instance', $this);
 
-	/**	
-	 * Build the data array for storing the log
-	 *
-	 * @return array
-	 */
-	protected function getData()
-	{
-		return [
-			'action' => $this->action,
-			'context' => $this->context,
-			'post_type' => $this->post_type,
-			'post_id' => $this->post_id,
-			'meta' => $this->getMeta(),
-			'user_id' => $this->getUserID(),
-			'username' => $this->maybeGetUsersUsername(),
-			'user_meta' => $this->getUserMeta(),
-			'ip_address' => $this->maybeGetUsersIp(),
-		];
-	}
+        if ($this->active) {
+            return $this->makeRequest('/logs/store', $this->getData());
+        }
 
-	/**
-	 * Build the user meta array
-	 *
-	 * @return array
-	 */
-	public function getUserMeta()
-	{
-		return (array) apply_filters('wp_logtivity_get_user_meta', $this->userMeta);
-	}
+        return null;
+    }
 
-	/**
-	 * Build the meta array
-	 *
-	 * @return array
-	 */
-	public function getMeta()
-	{
-		return (array) apply_filters('wp_logtivity_get_meta', $this->meta);
-	}
+    /**
+     * Build the data array for storing the log
+     *
+     * @return array
+     */
+    protected function getData()
+    {
+        return [
+            'action'     => $this->action,
+            'context'    => $this->context,
+            'post_type'  => $this->post_type,
+            'post_id'    => $this->post_id,
+            'meta'       => $this->getMeta(),
+            'user_id'    => $this->getUserID(),
+            'username'   => $this->maybeGetUsersUsername(),
+            'user_meta'  => $this->getUserMeta(),
+            'ip_address' => $this->maybeGetUsersIp(),
+        ];
+    }
 
-	/**
-	 * Maybe get the users profile link
-	 * 
-	 * @return string|false
-	 */
-	protected function maybeAddProfileLink()
-	{
-		if (!$this->options->shouldStoreProfileLink()) {
-			return;
-		}
+    /**
+     * Build the user meta array
+     *
+     * @return array
+     */
+    public function getUserMeta()
+    {
+        return (array)apply_filters('wp_logtivity_get_user_meta', $this->userMeta);
+    }
 
-		if (!$this->user->isLoggedIn()) {
-			return;
-		}
+    /**
+     * Build the meta array
+     *
+     * @return array
+     */
+    public function getMeta()
+    {
+        return (array)apply_filters('wp_logtivity_get_meta', $this->meta);
+    }
 
-		$profileLink = $this->user->profileLink();
+    /**
+     * Maybe get the users profile link
+     *
+     * @return string|false
+     */
+    protected function maybeAddProfileLink()
+    {
+        if (!$this->options->shouldStoreProfileLink()) {
+            return;
+        }
 
-		if ($profileLink == '') {
-			return null;
-		}
+        if (!$this->user->isLoggedIn()) {
+            return;
+        }
 
-		return $this->addUserMeta('Profile Link', $profileLink);
-	}
+        $profileLink = $this->user->profileLink();
+
+        if ($profileLink == '') {
+            return null;
+        }
+
+        return $this->addUserMeta('Profile Link', $profileLink);
+    }
 }
