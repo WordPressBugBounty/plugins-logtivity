@@ -22,6 +22,9 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+// phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
+
 class Logtivity_Options
 {
     /**
@@ -189,9 +192,12 @@ class Logtivity_Options
         return true;
     }
 
-    public function urlHash()
+    /**
+     * @return string
+     */
+    public function urlHash(): string
     {
-        return $this->getOption('logtivity_url_hash');
+        return (string)$this->getOption('logtivity_url_hash');
     }
 
     /**
@@ -202,19 +208,28 @@ class Logtivity_Options
         return (string)$this->getOption('logtivity_global_disabled_logs');
     }
 
-    public function isWhiteLabelMode()
+    /**
+     * @return bool
+     */
+    public function isWhiteLabelMode(): bool
     {
-        return $this->getOption('logtivity_enable_white_label_mode');
+        return (bool)$this->getOption('logtivity_enable_white_label_mode');
     }
 
-    public function isPluginHiddenFromUI()
+    /**
+     * @return bool
+     */
+    public function isPluginHiddenFromUI(): bool
     {
-        return $this->getOption('logtivity_hide_plugin_from_ui');
+        return (bool)$this->getOption('logtivity_hide_plugin_from_ui');
     }
 
-    public function customPluginName()
+    /**
+     * @return string
+     */
+    public function customPluginName(): string
     {
-        return $this->getOption('logtivity_custom_plugin_name');
+        return (string)$this->getOption('logtivity_custom_plugin_name');
     }
 
     /**
@@ -282,22 +297,16 @@ class Logtivity_Options
      */
     protected function validateSetting(string $setting, $value): bool
     {
-        $method = $this->rules[$setting] ?? null;
-        switch ($method) {
-            case 'is_bool':
-                $value = (bool)$value;
-                break;
+        if (isset($this->rules[$setting])) {
+            $method = $this->rules[$setting];
 
-            default:
-                if (function_exists($method)) {
-                    $value = $method($value);
+            if ($method == 'is_bool') {
+                return $method((bool)$value);
+            }
 
-                } else {
-                    $value = true;
-                }
-                break;
+            return $method($value);
         }
 
-        return $value;
+        return true;
     }
 }

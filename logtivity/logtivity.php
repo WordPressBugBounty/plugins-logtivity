@@ -4,7 +4,7 @@
  * Plugin Name: Logtivity
  * Plugin URI:  https://logtivity.io
  * Description: Record activity logs and errors logs across all your WordPress sites.
- * Version:     3.1.3
+ * Version:     3.1.4
  * Author:      Logtivity
  * Text Domain: logtivity
  */
@@ -30,16 +30,23 @@
  * You should have received a copy of the GNU General Public License
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+// phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
+// phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+
 class Logtivity
 {
-    protected $version = '3.1.3';
+    /**
+     * @var string
+     */
+    protected string $version = '3.1.4';
 
     /**
      * List all classes here with their file paths. Keep class names the same as filenames.
      *
-     * @var array
+     * @var string[]
      */
-    private $dependancies = [
+    private array $dependencies = [
         'Helpers/Helpers',
         'Helpers/Logtivity_Wp_User',
         'Admin/Logtivity_Log_Index_Controller',
@@ -64,11 +71,9 @@ class Logtivity
     ];
 
     /**
-     *
-     *    Log classes
-     *
+     * @var string[]
      */
-    private $logClasses = [
+    private array $logClasses = [
         /**
          * Activity logging
          */
@@ -83,11 +88,11 @@ class Logtivity
     ];
 
     /**
-     * List all integration dependancies
+     * List all integration dependencies
      *
-     * @var array
+     * @var array[]
      */
-    private $integrationDependancies = [
+    private array $integrationDependencies = [
         'WP_DLM'                 => [
             'Logs/Download_Monitor/Logtivity_Download_Monitor',
         ],
@@ -118,7 +123,7 @@ class Logtivity
 
     public function __construct()
     {
-        $this->loadDependancies();
+        $this->loadDependencies();
 
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), [$this, 'addSettingsLinkFromPluginsPage']);
 
@@ -135,9 +140,9 @@ class Logtivity
         add_action('admin_enqueue_scripts', [$this, 'loadScripts']);
     }
 
-    public function loadDependancies()
+    public function loadDependencies()
     {
-        foreach ($this->dependancies as $filePath) {
+        foreach ($this->dependencies as $filePath) {
             $this->loadFile($filePath);
         }
 
@@ -148,7 +153,7 @@ class Logtivity
 
             $this->maybeLoadLogClasses();
 
-            $this->loadIntegrationDependancies();
+            $this->loadIntegrationDependencies();
         });
     }
 
@@ -162,9 +167,9 @@ class Logtivity
      *
      * @return bool
      */
-    public function defaultLoggingDisabled()
+    public function defaultLoggingDisabled(): bool
     {
-        return (new Logtivity_Options)->getOption('logtivity_disable_default_logging');
+        return (bool)(new Logtivity_Options())->getOption('logtivity_disable_default_logging');
     }
 
     public function maybeLoadLogClasses()
@@ -174,9 +179,9 @@ class Logtivity
         }
     }
 
-    public function loadIntegrationDependancies()
+    public function loadIntegrationDependencies()
     {
-        foreach ($this->integrationDependancies as $key => $value) {
+        foreach ($this->integrationDependencies as $key => $value) {
             if (class_exists($key)) {
                 foreach ($value as $filePath) {
                     $this->loadFile($filePath);
@@ -190,23 +195,36 @@ class Logtivity
         return Logtivity_Logger::log($action, $meta, $user_id);
     }
 
-    public static function logError($error)
+    /**
+     * @param array $error
+     *
+     * @return Logtivity_Error_Logger
+     */
+    public static function logError(array $error): Logtivity_Error_Logger
     {
         return new Logtivity_Error_Logger($error);
     }
 
-    public function upgradeProcessComplete($upgrader_object, $options)
+    /**
+     * @param $upgraderObject
+     * @param $options
+     *
+     * @return null|void
+     */
+    public function upgradeProcessComplete($upgraderObject, $options)
     {
-        if ($options['type'] != 'plugin') {
-            return;
-        }
+        $type   = $options['type'] ?? null;
+        $action = $options['action'] ?? null;
 
-        if ($options['action'] == 'update') {
-            return $this->setLogtivityToLoadFirst();
+        if ($type == 'plugin' && $action == 'update') {
+            $this->setLogtivityToLoadFirst();
         }
     }
 
-    public function setLogtivityToLoadFirst()
+    /**
+     * @return void
+     */
+    public function setLogtivityToLoadFirst(): void
     {
         $path = str_replace(WP_PLUGIN_DIR . '/', '', __FILE__);
 
@@ -219,20 +237,29 @@ class Logtivity
         }
     }
 
-    public function addSettingsLinkFromPluginsPage($links)
+    /**
+     * @param array $links
+     *
+     * @return string[]
+     */
+    public function addSettingsLinkFromPluginsPage(array $links): array
     {
         if (apply_filters('logtivity_hide_settings_page', false)) {
             return $links;
         }
 
-        $settings_links = [
-            '<a href="' . admin_url('admin.php?page=logtivity-settings') . '">Settings</a>',
-        ];
-
-        return array_merge($settings_links, $links);
+        return array_merge(
+            [
+                sprintf('<a href="%s">Settings</a>', admin_url('admin.php?page=logtivity-settings')),
+            ],
+            $links
+        );
     }
 
-    public function activated()
+    /**
+     * @return void
+     */
+    public function activated(): void
     {
         if (apply_filters('logtivity_hide_settings_page', false)) {
             return;
@@ -241,7 +268,10 @@ class Logtivity
         set_transient('logtivity-welcome-notice', true, 5);
     }
 
-    public function welcomeMessage()
+    /**
+     * @return void
+     */
+    public function welcomeMessage(): void
     {
         if (get_transient('logtivity-welcome-notice')) {
             echo logtivity_view('activation');
@@ -250,18 +280,24 @@ class Logtivity
         }
     }
 
-    public function checkForSiteUrlChange()
+    /**
+     * @return void
+     */
+    public function checkForSiteUrlChange(): void
     {
-        if (!current_user_can('manage_options')) {
-            return;
-        }
-
-        if (logtivity_has_site_url_changed() && !get_transient('dismissed-logtivity-site-url-has-changed-notice')) {
+        if (
+            current_user_can('manage_options')
+            && logtivity_has_site_url_changed()
+            && !get_transient('dismissed-logtivity-site-url-has-changed-notice')
+        ) {
             echo logtivity_view('site-url-changed-notice');
         }
     }
 
-    public function loadScripts()
+    /**
+     * @return void
+     */
+    public function loadScripts(): void
     {
         wp_enqueue_style(
             'logtivity_google_font_admin_css',
@@ -284,4 +320,4 @@ class Logtivity
     }
 }
 
-$logtivity = new Logtivity;
+$logtivity = new Logtivity();

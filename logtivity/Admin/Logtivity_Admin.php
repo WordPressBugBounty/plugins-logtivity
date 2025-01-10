@@ -22,169 +22,184 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
+// phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+// phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
+
 class Logtivity_Admin
 {
-	protected $options;
+    /**
+     * @var Logtivity_Options
+     */
+    protected Logtivity_Options $options;
 
-	protected static $shouldHidePluginFromUI = false;
-	
-	public function __construct()
-	{
-		add_action( 'admin_menu', [$this, 'registerOptionsPage'] );
+    /**
+     * @var bool
+     */
+    protected static bool $shouldHidePluginFromUI = false;
 
-		add_action( 'wp_ajax_logtivity_update_settings', [$this, 'update']);
-		add_action( 'wp_ajax_nopriv_logtivity_update_settings', [$this, 'update']);
+    public function __construct()
+    {
+        add_action('admin_menu', [$this, 'registerOptionsPage']);
 
-		add_filter('logtivity_hide_from_menu', [$this, 'shouldHidePluginFromUI']);
-		add_filter('all_plugins', [$this, 'maybeHideFromMenu']);
+        add_action('wp_ajax_logtivity_update_settings', [$this, 'update']);
+        add_action('wp_ajax_nopriv_logtivity_update_settings', [$this, 'update']);
 
-		$this->options = new Logtivity_Options;
-	}
+        add_filter('logtivity_hide_from_menu', [$this, 'shouldHidePluginFromUI']);
+        add_filter('all_plugins', [$this, 'maybeHideFromMenu']);
 
-	public function maybeHideFromMenu($plugins)
-	{
-		if ($name = (new Logtivity_Options)->customPluginName()) {
-			if (isset($plugins['logtivity/logtivity.php'])) {
-				$plugins['logtivity/logtivity.php']['Name'] = $name;
-			}
-		}
+        $this->options = new Logtivity_Options();
+    }
 
-		if (!$this->shouldHidePluginFromUI(false)) {
-			return $plugins;
-		}
+    /**
+     * @param array $plugins
+     *
+     * @return array
+     */
+    public function maybeHideFromMenu(array $plugins): array
+    {
+        if ($name = (new Logtivity_Options())->customPluginName()) {
+            if (isset($plugins['logtivity/logtivity.php'])) {
+                $plugins['logtivity/logtivity.php']['Name'] = $name;
+            }
+        }
 
-		$shouldHide = ! array_key_exists( 'show_all', $_GET );
+        if (!$this->shouldHidePluginFromUI()) {
+            return $plugins;
+        }
 
-		if ( $shouldHide ) {
-			$hiddenPlugins = [
-				'logtivity/logtivity.php',
-			];
+        $shouldHide = !array_key_exists('show_all', $_GET);
 
-			foreach ( $hiddenPlugins as $hiddenPlugin ) {
-				unset( $plugins[ $hiddenPlugin ] );
-			}
-		}
-		return $plugins;
-	}
+        if ($shouldHide) {
+            $hiddenPlugins = [
+                'logtivity/logtivity.php',
+            ];
 
-	public function shouldHidePluginFromUI($value)
-	{
-		if (self::$shouldHidePluginFromUI = (new Logtivity_Options)->isPluginHiddenFromUI()) {
-			return self::$shouldHidePluginFromUI;
-		}
-		return $value;
-	}
+            foreach ($hiddenPlugins as $hiddenPlugin) {
+                unset($plugins[$hiddenPlugin]);
+            }
+        }
+        return $plugins;
+    }
 
-	/**
-	 * Register the settings page
-	 */
-	public function registerOptionsPage() 
-	{
-		if (!apply_filters('logtivity_hide_from_menu', false)) {
-			add_menu_page(
-				($this->options->isWhiteLabelMode() ? 'Logs' : 'Logtivity'), 
-				($this->options->isWhiteLabelMode() ? 'Logs' : 'Logtivity'), 
-				'manage_options', 
-				($this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity'), 
-				[$this, 'showLogIndexPage'], 
-				'dashicons-chart-area', 
-				26 
-			);
-		}
-		
-		if (!apply_filters('logtivity_hide_settings_page', false)) {
-			add_submenu_page(
-				($this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity'),
-				'Logtivity Settings', 
-				'Settings', 
-				'manage_options', 
-				'logtivity'.'-settings', 
-				[$this, 'showLogtivitySettingsPage']
-			);
-		}
-	}
+    /**
+     * @param bool $value
+     *
+     * @return bool
+     */
+    public function shouldHidePluginFromUI(bool $value = false): bool
+    {
+        if (static::$shouldHidePluginFromUI = (new Logtivity_Options())->isPluginHiddenFromUI()) {
+            return static::$shouldHidePluginFromUI;
+        }
 
-	/**	
-	 * Show the admin log index
-	 * 
-	 * @return void
-	 */
-	public function showLogIndexPage()
-	{
-		if ( !current_user_can( 'manage_options' ) )  {
-			wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
-		}
+        return $value;
+    }
 
-		$options = $this->options->getOptions();
+    /**
+     * Register the settings page
+     */
+    public function registerOptionsPage()
+    {
+        if (!apply_filters('logtivity_hide_from_menu', false)) {
+            add_menu_page(
+                ($this->options->isWhiteLabelMode() ? 'Logs' : 'Logtivity'),
+                ($this->options->isWhiteLabelMode() ? 'Logs' : 'Logtivity'),
+                'manage_options',
+                ($this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity'),
+                [$this, 'showLogIndexPage'],
+                'dashicons-chart-area',
+                26
+            );
+        }
 
-		echo logtivity_view('log-index', compact('options'));
-	}
+        if (!apply_filters('logtivity_hide_settings_page', false)) {
+            add_submenu_page(
+                ($this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity'),
+                'Logtivity Settings',
+                'Settings',
+                'manage_options',
+                'logtivity' . '-settings',
+                [$this, 'showLogtivitySettingsPage']
+            );
+        }
+    }
 
-	/**	
-	 * Show the admin settings template
-	 * 
-	 * @return void
-	 */
-	public function showLogtivitySettingsPage() 
-	{
-		if ( !current_user_can( 'manage_options' ) )  {
-			wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
-		}
+    /**
+     * Show the admin log index
+     *
+     * @return void
+     */
+    public function showLogIndexPage()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
 
-		$options = $this->options->getOptions();
+        $options = $this->options->getOptions();
 
-		echo logtivity_view('settings', compact('options'));
-	}
+        echo logtivity_view('log-index', compact('options'));
+    }
 
-	/**
-	 * Update the settings
-	 * 
-	 * @return WP_Redirect
-	 */
-	public function update()
-	{
-		if (!wp_verify_nonce( $_POST['logtivity_update_settings'], 'logtivity_update_settings' )) 
-		{
-		    wp_safe_redirect( $this->settingsPageUrl() );
-			exit;
-			return;
-		}
+    /**
+     * Show the admin settings template
+     *
+     * @return void
+     */
+    public function showLogtivitySettingsPage()
+    {
+        if (!current_user_can('manage_options')) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
 
-		$user = new Logtivity_Wp_User;
+        $options = $this->options->getOptions();
 
-		if (!$user->hasRole('administrator')) {
-		    wp_safe_redirect( $this->settingsPageUrl() );
-			exit;
-			return;
-		}
+        echo logtivity_view('settings', compact('options'));
+    }
 
-		$this->options->update([
-				'logtivity_url_hash' => md5(home_url()),
-			],
-			false
-		);
+    /**
+     * Update the settings
+     *
+     * @return void
+     */
+    public function update(): void
+    {
+        if (!wp_verify_nonce($_POST['logtivity_update_settings'], 'logtivity_update_settings')) {
+            wp_safe_redirect($this->settingsPageUrl());
+            exit;
+        }
 
-		delete_transient( 'dismissed-logtivity-site-url-has-changed-notice' );
+        $user = new Logtivity_Wp_User();
 
-		$this->options->update();
+        if (!$user->hasRole('administrator')) {
+            wp_safe_redirect($this->settingsPageUrl());
+            exit;
+        }
 
-		(new Logtivity_Check_For_New_Settings)->checkForNewSettings();
-		
-	    wp_safe_redirect( $this->settingsPageUrl() );
-	    exit;
-	}
+        $this->options->update(
+            [
+                'logtivity_url_hash' => md5(home_url()),
+            ],
+            false
+        );
 
-	/**
-	 * Get the url to the settings page
-	 * 
-	 * @return string
-	 */
-	public function settingsPageUrl()
-	{
-		return admin_url('admin.php?page=logtivity-settings');
-	}
+        delete_transient('dismissed-logtivity-site-url-has-changed-notice');
 
+        $this->options->update();
+
+        (new Logtivity_Check_For_New_Settings())->checkForNewSettings();
+
+        wp_safe_redirect($this->settingsPageUrl());
+        exit;
+    }
+
+    /**
+     * @return string
+     */
+    public function settingsPageUrl(): string
+    {
+        return admin_url('admin.php?page=logtivity-settings');
+    }
 }
 
-$Logtivity_Admin = new Logtivity_Admin;
-
+new Logtivity_Admin();

@@ -1,0 +1,38 @@
+{
+    "name": "logtivity/logtivity",
+    "license":[
+        "GPL-2.0-or-later"
+    ],
+    "description": "",
+    "authors": [
+        {
+            "name": "Logtivity",
+            "email": "hello@logtivity.io",
+            "homepage": "https://logtivity.io",
+            "role": "Owner"
+        },
+        {
+            "name": "Bill Tomczak",
+            "email": "bill@joomlashack.com",
+            "homepage": "https://logtivity.io",
+            "role": "Developer"
+        }
+    ],
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "require": {
+        "php": ">=7.4",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.11",
+        "wp-coding-standards/wpcs": "^3.1",
+        "automattic/vipwpcs": "^3.0"
+    },
+    "scripts": {
+        "check:phpcs": "vendor/bin/phpcs --standard=WordPress-VIP-Go ./ --severity=6 --ignore=vendor || true"
+    }
+}
