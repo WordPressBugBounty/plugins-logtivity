@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024 Logtivity. All rights reserved
+ * @copyright 2024-2025 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -31,16 +31,16 @@
  */
 function logtivity_dd($dump)
 {
-    echo "<pre>";
+    echo '<pre>';
     var_export($dump);
-    echo "</pre>";
+    echo '</pre>';
     die();
 }
 
 /**
  * Load a view and pass variables into it
  *
- * To ouput a view you would want to echo it
+ * To output a view you would want to echo it
  *
  * @param string $fileName excluding file extension
  * @param array  $vars
@@ -49,16 +49,11 @@ function logtivity_dd($dump)
  */
 function logtivity_view(string $fileName, array $vars = []): string
 {
-
-    foreach ($vars as $key => $value) {
-
-        ${$key} = $value;
-
-    }
+    extract($vars);
 
     ob_start();
 
-    include(dirname(__FILE__) . '/../views/' . str_replace('.', '/', $fileName) . '.php');
+    include(__DIR__ . '/../views/' . str_replace('.', '/', $fileName) . '.php');
 
     return ob_get_clean();
 }
@@ -71,12 +66,12 @@ function logtivity_view(string $fileName, array $vars = []): string
 function logtivity_get_api_key(): string
 {
     return sanitize_text_field(
-        (new Logtivity_Options)->getOption('logtivity_site_api_key')
+        (new Logtivity_Options())->getOption('logtivity_site_api_key')
     );
 }
 
 /**
- * @param $postId
+ * @param int $postId
  *
  * @return string
  */
@@ -122,7 +117,7 @@ function logtivity_get_app_url(): string
  */
 function logtivity_has_site_url_changed(): bool
 {
-    $hash = (new Logtivity_Options)->urlHash();
+    $hash = (new Logtivity_Options())->urlHash();
 
     if (!$hash) {
         return false;

@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024 Logtivity. All rights reserved
+ * @copyright 2024-2025 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -46,7 +46,7 @@ class Logtivity_Dismiss_Notice_Controller
      */
     public function dismiss(): void
     {
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 

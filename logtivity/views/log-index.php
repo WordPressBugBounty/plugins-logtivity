@@ -2,7 +2,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024 Logtivity. All rights reserved
+ * @copyright 2024-2025 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.

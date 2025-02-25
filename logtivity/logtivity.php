@@ -4,7 +4,7 @@
  * Plugin Name: Logtivity
  * Plugin URI:  https://logtivity.io
  * Description: Record activity logs and errors logs across all your WordPress sites.
- * Version:     3.1.4
+ * Version:     3.1.5
  * Author:      Logtivity
  * Text Domain: logtivity
  */
@@ -12,7 +12,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024 Logtivity. All rights reserved
+ * @copyright 2024-2025 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -36,10 +36,13 @@
 
 class Logtivity
 {
+    public const ACCESS_LOGS = 'view_logs';
+    public const ACCESS_SETTINGS = 'view_log_settings';
+
     /**
      * @var string
      */
-    protected string $version = '3.1.4';
+    protected string $version = '3.1.5';
 
     /**
      * List all classes here with their file paths. Keep class names the same as filenames.
@@ -261,6 +264,15 @@ class Logtivity
      */
     public function activated(): void
     {
+        if ($role = get_role('administrator')) {
+            if ($role->has_cap(Logtivity::ACCESS_LOGS) == false) {
+                $role->add_cap(Logtivity::ACCESS_LOGS);
+            }
+            if ($role->has_cap(Logtivity::ACCESS_SETTINGS) == false) {
+                $role->add_cap(Logtivity::ACCESS_SETTINGS);
+            }
+        }
+
         if (apply_filters('logtivity_hide_settings_page', false)) {
             return;
         }
@@ -286,7 +298,7 @@ class Logtivity
     public function checkForSiteUrlChange(): void
     {
         if (
-            current_user_can('manage_options')
+            current_user_can(static::ACCESS_SETTINGS)
             && logtivity_has_site_url_changed()
             && !get_transient('dismissed-logtivity-site-url-has-changed-notice')
         ) {

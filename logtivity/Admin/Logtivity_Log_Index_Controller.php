@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024 Logtivity. All rights reserved
+ * @copyright 2024-2025 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -22,65 +22,87 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// @phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
+// @phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+// @phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
+
 class Logtivity_Log_Index_Controller
 {
-	public function __construct()
-	{
-		add_action("wp_ajax_nopriv_logtivity_log_index_filter", [$this, 'search']);
-		add_action("wp_ajax_logtivity_log_index_filter", [$this, 'search']);
-	}
+    public function __construct()
+    {
+        add_action('wp_ajax_nopriv_logtivity_log_index_filter', [$this, 'search']);
+        add_action('wp_ajax_logtivity_log_index_filter', [$this, 'search']);
+    }
 
-	public function search()
-	{
-		if ( !current_user_can( 'manage_options' ) )  {
-			wp_die( __( 'You do not have sufficient permissions to access this page.' ) );
-		}
+    /**
+     * @return void
+     */
+    public function search(): void
+    {
+        if (!current_user_can(Logtivity::ACCESS_LOGS)) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
 
-		$response = json_decode(
-			(new Logtivity_Api)->get('/logs', [
-				'page' => $this->getInput('page'),
-				'action' => $this->getInput('search_action'),
-				'context' => $this->getInput('search_context'),
-				'action_user' => $this->getInput('action_user'),
-			])
-		);
-		
-		if (!$response) {
-			return $this->errorReponse('Please connect to Logtivity.');
-		}
+        $response = json_decode(
+            (new Logtivity_Api())->get('/logs', [
+                'page'        => $this->getInput('page'),
+                'action'      => $this->getInput('search_action'),
+                'context'     => $this->getInput('search_context'),
+                'action_user' => $this->getInput('action_user'),
+            ])
+        );
 
-		if (property_exists($response, 'message') && $response->message) {
-			return $this->errorReponse($response->message);
-		}
+        if (!$response) {
+            $this->errorReponse('Please connect to Logtivity.');
+        }
 
-		return $this->successResponse($response);
-	}
+        if (property_exists($response, 'message') && $response->message) {
+            $this->errorReponse($response->message);
+        }
 
-	private function successResponse($response)
-	{
-		return wp_send_json([
-			'view' => logtivity_view('_logs-loop', [
-				'logs' => $response->data,
-				'meta' => $response->meta,
-				'hasNextPage' => $response->links->next,
-			])
-		]);
-	}
+        $this->successResponse($response);
+    }
 
-	private function errorReponse($message)
-	{
-		return wp_send_json([
-			'view' => logtivity_view('_logs-loop', [
-				'message' => $message,
-				'logs' => [],
-			])
-		]);
-	}
+    /**
+     * @param object $response
+     *
+     * @return void
+     */
+    private function successResponse(object $response): void
+    {
+        wp_send_json([
+            'view' => logtivity_view('_logs-loop', [
+                'logs'        => $response->data,
+                'meta'        => $response->meta,
+                'hasNextPage' => $response->links->next,
+            ]),
+        ]);
+    }
 
-	private function getInput($field)
-	{
-		return ( isset($_GET[$field]) && is_string($_GET[$field]) ? $_GET[$field] : null);
-	}
+    /**
+     * @param string $message
+     *
+     * @return void
+     */
+    private function errorReponse(string $message): void
+    {
+        wp_send_json([
+            'view' => logtivity_view('_logs-loop', [
+                'message' => $message,
+                'logs'    => [],
+            ]),
+        ]);
+    }
+
+    /**
+     * @param string $field
+     *
+     * @return ?string
+     */
+    private function getInput(string $field): ?string
+    {
+        return (isset($_GET[$field]) && is_string($_GET[$field]) ? $_GET[$field] : null);
+    }
 }
 
-new Logtivity_Log_Index_Controller;
+new Logtivity_Log_Index_Controller();

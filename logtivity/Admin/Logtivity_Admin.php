@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024 Logtivity. All rights reserved
+ * @copyright 2024-2025 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -105,7 +105,7 @@ class Logtivity_Admin
             add_menu_page(
                 ($this->options->isWhiteLabelMode() ? 'Logs' : 'Logtivity'),
                 ($this->options->isWhiteLabelMode() ? 'Logs' : 'Logtivity'),
-                'manage_options',
+                Logtivity::ACCESS_LOGS,
                 ($this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity'),
                 [$this, 'showLogIndexPage'],
                 'dashicons-chart-area',
@@ -118,7 +118,7 @@ class Logtivity_Admin
                 ($this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity'),
                 'Logtivity Settings',
                 'Settings',
-                'manage_options',
+                Logtivity::ACCESS_SETTINGS,
                 'logtivity' . '-settings',
                 [$this, 'showLogtivitySettingsPage']
             );
@@ -132,7 +132,7 @@ class Logtivity_Admin
      */
     public function showLogIndexPage()
     {
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can(Logtivity::ACCESS_LOGS)) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 
@@ -148,7 +148,7 @@ class Logtivity_Admin
      */
     public function showLogtivitySettingsPage()
     {
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
 

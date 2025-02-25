@@ -4,7 +4,7 @@ Contributors: logtivity, stevejburge
 Tags: activity log, error logs, event monitoring, user activity, error log, activity logs, logs, log data, site activities, site events
 Requires at least: 4.7
 Tested up to: 6.6.2
-Stable tag: 3.1.4
+Stable tag: 3.1.5
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -262,9 +262,15 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 
 == Changelog ==
 
+= 3.1.5 =
+
+* Add: new capabilities - 'view logs', 'view log settings'
+
+_Release Date - Pending_
+
 = 3.1.4 =
 
-_Release Date - TBD
+_Release Date - Thursday, January 9th 2025_
 
 * Fix: Deprecation warning, #50
 * Fix: Unable to uncheck settings
