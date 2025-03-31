@@ -22,183 +22,208 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
+// phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+// phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
+
 class Logtivity_Post extends Logtivity_Abstract_Logger
 {
-	protected $disableUpdateLog = false;
-	
-	protected $action;
+    /**
+     * @var bool
+     */
+    protected bool $disableUpdateLog = false;
 
-	public function registerHooks()
-	{
-		add_action( 'transition_post_status', [$this, 'postStatusChanged'], 10, 3);
-		add_action( 'save_post', array( $this, 'postWasUpdated' ), 10, 3 );
-		add_action( 'wp_trash_post', [$this, 'postWasTrashed'], 10, 1 );
-		add_filter('wp_handle_upload', [$this, 'mediaUploaded'], 10, 2);
-		add_action('delete_post', [$this, 'postPermanentlyDeleted'], 10, 1);
-		add_filter( 'wp_ajax_save-attachment', [$this, 'mediaMetaUpdated'], -1 );
-	}
+    /**
+     * @var ?string
+     */
+    protected ?string $action = null;
 
-	public function postStatusChanged($new_status, $old_status, $post)
-	{
-		if ($this->shouldIgnore($post)) {
-			return;
-		}
+    /**
+     * @return void
+     */
+    public function registerHooks(): void
+    {
+        add_action('transition_post_status', [$this, 'postStatusChanged'], 10, 3);
+        add_action('save_post', [$this, 'postWasUpdated'], 10, 3);
+        add_action('wp_trash_post', [$this, 'postWasTrashed']);
+        add_action('delete_post', [$this, 'postPermanentlyDeleted']);
 
-		if ($old_status == 'trash') {
-			$this->disableUpdateLog = true;
-			return $this->postWasRestored($post);
-		}
+        add_filter('wp_handle_upload', [$this, 'mediaUploaded'], 10, 2);
+    }
 
-		if ($old_status != 'publish' && $new_status == 'publish') {
-			$this->action = $this->getPostTypeLabel($post->ID) . ' Published';
-			return;
-		}
+    /**
+     * @param string  $newStatus
+     * @param string  $oldStatus
+     * @param WP_Post $post
+     *
+     * @return void
+     */
+    public function postStatusChanged(string $newStatus, string $oldStatus, WP_Post $post): void
+    {
+        if ($this->shouldIgnore($post) == false) {
+            if ($oldStatus == 'trash') {
+                $this->disableUpdateLog = true;
+                $this->postWasRestored($post);
 
-		if ($old_status == 'publish' && $new_status == 'draft') {
-			$this->action = $this->getPostTypeLabel($post->ID) . ' Unpublished';
-			return;
-		}
+            } elseif ($oldStatus != 'publish' && $newStatus == 'publish') {
+                $this->action = $this->getPostTypeLabel($post->ID) . ' Published';
 
-		if ($old_status != $new_status) {
-			Logtivity_Logger::log()
-				->setAction(
-					$this->getPostTypeLabel($post->ID) . ' Status changed from '.$old_status.' to '.$new_status
-				)
-				->setContext($post->post_title)
-				->setPostType($post->post_type) 
-				->setPostId($post->ID) 
-				->send();
-		}
+            } elseif ($oldStatus == 'publish' && $newStatus == 'draft') {
+                $this->action = $this->getPostTypeLabel($post->ID) . ' Unpublished';
 
-	}
+            } elseif ($oldStatus != $newStatus) {
+                $action = sprintf(
+                    '%s Status changed from %s to %s',
+                    $this->getPostTypeLabel($post->ID),
+                    $oldStatus,
+                    $newStatus
+                );
 
-	/**
-	 * Post was updated or created. ignoring certain auto save system actions
-	 * 
-	 * @param  integer $post_id 
-	 * @param  WP_Post $post    
-	 * @param  bool $update
-	 * @return void
-	 */
-	public function postWasUpdated($post_id, $post, $update)
-	{
-		if ($this->disableUpdateLog) {
-			return;
-		}
+                Logtivity_Logger::log()
+                    ->setAction($action)
+                    ->setContext($post->post_title)
+                    ->setPostType($post->post_type)
+                    ->setPostId($post->ID)
+                    ->send();
+            }
+        }
+    }
 
-		if ($this->shouldIgnore($post)) {
-			return;
-		}
+    /**
+     * Post was updated or created. ignoring certain auto save system actions
+     *
+     * @param int     $postId
+     * @param WP_Post $post
+     *
+     * @return void
+     */
+    public function postWasUpdated(int $postId, WP_Post $post): void
+    {
+        if (
+            $this->disableUpdateLog == false
+            && $this->shouldIgnore($post) == false
+            && $this->loggedRecently($post->ID) == false
+        ) {
+            $revision = $this->getRevision($postId);
 
-		if ($this->loggedRecently($post->ID)) {
-			return true;
-		}
+            Logtivity_Logger::log()
+                ->setAction($this->action ?: $this->getPostTypeLabel($post->ID) . ' Updated')
+                ->setContext($post->post_title)
+                ->setPostType($post->post_type)
+                ->setPostId($post->ID)
+                ->addMeta('Post Title', $post->post_title)
+                ->addMeta('Post Status', $post->post_status)
+                ->addMetaIf($revision, 'View Revision', $revision)
+                ->send();
 
-		$revision = $this->getRevision($post_id);
+            update_post_meta($postId, 'logtivity_last_logged', (new DateTime())->format('Y-m-d H:i:s'));
+        }
+    }
 
-		Logtivity_Logger::log()
-			->setAction($this->action ?? $this->getPostTypeLabel($post->ID) . ' Updated')
-			->setContext($post->post_title)
-			->setPostType($post->post_type)
-			->setPostId($post->ID)
-			->addMeta('Post Title', $post->post_title)
-			->addMeta('Post Status', $post->post_status)
-			->addMetaIf($revision, 'View Revision', $revision)
-			->send();
+    /**
+     * @param int $postId
+     *
+     * @return ?string
+     */
+    protected function getRevision(int $postId): ?string
+    {
+        if ($revisions = wp_get_post_revisions($postId)) {
+            $revision = array_shift($revisions);
 
-		update_post_meta($post_id, 'logtivity_last_logged', (new \DateTime())->format('Y-m-d H:i:s'));
-	}
+            $revision = $this->getRevisionLink($revision->ID);
+        }
 
-	private function getRevision( $post_id ) 
-	{
-		$revisions = wp_get_post_revisions( $post_id );
-		if ( ! empty( $revisions ) ) {
-			$revision = array_shift( $revisions );
-			return $this->getRevisionLink( $revision->ID );
-		}
-	}
+        return $revision ?? null;
+    }
 
-	private function getRevisionLink( $revision_id ) 
-	{
-		return ! empty( $revision_id ) ? add_query_arg( 'revision', $revision_id, admin_url( 'revision.php' ) ) : null;
-	}
+    /**
+     * @param null|int $revisionId
+     * @return null|string
+     */
+    private function getRevisionLink(?int $revisionId): ?string
+    {
+        return $revisionId
+            ? add_query_arg('revision', $revisionId, admin_url('revision.php'))
+            : null;
+    }
 
-	public function postWasTrashed($post_id)
-	{
-		if (get_post_type($post_id) == 'customize_changeset') {
-			return;
-		}
-		
-		return Logtivity_Logger::log()
-			->setAction($this->getPostTypeLabel($post_id) . ' Trashed')
-			->setContext(logtivity_get_the_title($post_id))
-			->setPostType(get_post_type($post_id))
-			->setPostId($post_id)
-			->addMeta('Post Title', logtivity_get_the_title($post_id))
-			->send();
-	}
+    /**
+     * @param int $postId
+     *
+     * @return void
+     */
+    public function postWasTrashed(int $postId): void
+    {
+        if (get_post_type($postId) != 'customize_changeset') {
+            Logtivity_Logger::log()
+                ->setAction($this->getPostTypeLabel($postId) . ' Trashed')
+                ->setContext(logtivity_get_the_title($postId))
+                ->setPostType(get_post_type($postId))
+                ->setPostId($postId)
+                ->addMeta('Post Title', logtivity_get_the_title($postId))
+                ->send();
+        }
+    }
 
-	public function postWasRestored($post)
-	{
-		return Logtivity_Logger::log()
-			->setAction(
-				$this->getPostTypeLabel($post->ID) . ' Restored from Trash'
-			)
-			->setContext($post->post_title)
-			->setPostType($post->post_type)
-			->setPostId($post->ID)
-			->addMeta('Post Title', $post->post_title)
-			->send();
-	}
+    /**
+     * @param WP_Post $post
+     *
+     * @return void
+     */
+    public function postWasRestored(WP_Post $post): void
+    {
+        $action = $this->getPostTypeLabel($post->ID) . ' Restored from Trash';
 
-	public function postPermanentlyDeleted($post_id)
-	{
-		if ($this->ignoringPostType(get_post_type($post_id))) {
-			return;
-		}
+        Logtivity_Logger::log()
+            ->setAction($action)
+            ->setContext($post->post_title)
+            ->setPostType($post->post_type)
+            ->setPostId($post->ID)
+            ->addMeta('Post Title', $post->post_title)
+            ->send();
+    }
 
-		if ($this->ignoringPostTitle(logtivity_get_the_title($post_id))) {
-			return;
-		}
+    /**
+     * @param int $postId
+     *
+     * @return void
+     */
+    public function postPermanentlyDeleted(int $postId): void
+    {
+        if (
+            $this->ignoringPostType(get_post_type($postId)) == false
+            && $this->ignoringPostTitle(logtivity_get_the_title($postId)) == false
+        ) {
+            Logtivity_Logger::log()
+                ->setAction(
+                    $this->getPostTypeLabel($postId) . ' Permanently Deleted'
+                )
+                ->setContext(logtivity_get_the_title($postId))
+                ->setPostType(get_post_type($postId))
+                ->setPostId($postId)
+                ->addMeta('Post Title', logtivity_get_the_title($postId))
+                ->send();
+        }
+    }
 
-		return Logtivity_Logger::log()
-			->setAction(
-				$this->getPostTypeLabel($post_id) . ' Permanently Deleted'
-			)
-			->setContext(logtivity_get_the_title($post_id))
-			->setPostType(get_post_type($post_id))
-			->setPostId($post_id)
-			->addMeta('Post Title', logtivity_get_the_title($post_id))
-			->send();
-	}
+    /**
+     * @param array  $upload
+     * @param string $context
+     *
+     * @return array
+     */
+    public function mediaUploaded(array $upload, string $context): array
+    {
+        Logtivity_Logger::log()
+            ->setAction('Attachment Uploaded')
+            ->setContext(basename($upload['file']))
+            ->addMeta('Url', $upload['url'])
+            ->addMeta('Type', $upload['type'])
+            ->addMeta('Context', $context)
+            ->send();
 
-	public function mediaUploaded($upload, $context)
-	{
-		Logtivity_Logger::log()
-			->setAction('Attachment Uploaded')
-			->setContext(basename($upload['file']))
-			->addMeta('Url', $upload['url'])
-			->addMeta('Type', $upload['type'])
-			->addMeta('Context', $context)
-			->send();
-
-		return $upload;
-	}
-
-	public function mediaMetaUpdated() 
-	{
-		$post_id = absint($_POST['id']);
-
-		if ($post_id) {
-			Logtivity_Logger::log()
-				->setAction('Attachment Meta Updated.')
-				->addMeta("Media ID", $post_id)
-				->addMeta("Changes", ( isset($_POST['changes']) ? $_POST['changes'] : null))
-				->send();
-		}
-
-		return $post;
-	}
+        return $upload;
+    }
 }
 
-$Logtivity_Post = new Logtivity_Post;
+new Logtivity_Post();

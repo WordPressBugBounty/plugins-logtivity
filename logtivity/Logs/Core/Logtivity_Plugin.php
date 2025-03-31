@@ -24,141 +24,177 @@
 
 class Logtivity_Plugin extends Logtivity_Abstract_Logger
 {
-	public function registerHooks()
-	{
-		add_action( 'activated_plugin', [$this, 'pluginActivated'], 10, 2 );
-		add_action( 'deactivated_plugin', [$this, 'pluginDeactivated'], 10, 2 );
-		add_action( 'upgrader_process_complete', [$this, 'upgradeProcessComplete'], 10, 2);
-		add_filter( 'editable_extensions', [$this, 'pluginFileModified'], 10, 2 );
-		add_action( 'deleted_plugin', [$this, 'pluginDeleted'], 10, 2 );
-	}
+    /**
+     * @return void
+     */
+    public function registerHooks(): void
+    {
+        add_action('activated_plugin', [$this, 'pluginActivated'], 10, 2);
+        add_action('deactivated_plugin', [$this, 'pluginDeactivated'], 10, 2);
+        add_action('upgrader_process_complete', [$this, 'upgradeProcessComplete'], 10, 2);
+        add_action('deleted_plugin', [$this, 'pluginDeleted'], 10, 2);
 
-	public function pluginActivated($slug, $network_wide)
-	{
-		$data = get_plugin_data( WP_PLUGIN_DIR . '/' . $slug, true, false );
+        add_filter('editable_extensions', [$this, 'pluginFileModified'], 10, 2);
+    }
 
-		return Logtivity_Logger::log()
-			->setAction('Plugin Activated')
-			->setContext($slug) 
-			->addMeta('Slug', $slug)
-			->addMeta('version', ( isset($data['Version']) ? $data['Version'] : 'Not set'))
-			->addMeta('network_wide', $network_wide)
-			->send();
-	}
+    /**
+     * @param string $slug
+     * @param bool   $networkWide
+     *
+     * @return void
+     */
+    public function pluginActivated(string $slug, bool $networkWide): void
+    {
+        $data = get_plugin_data(WP_PLUGIN_DIR . '/' . $slug, true, false);
 
-	public function pluginDeactivated($slug, $network_deactivating)
-	{
-		return Logtivity_Logger::log()
-			->setAction('Plugin Deactivated')
-			->setContext($slug)
-			->addMeta('Slug', $slug)
-			->addMeta('network_deactivating', $network_deactivating)
-			->send();
-	}
+        Logtivity_Logger::log()
+            ->setAction('Plugin Activated')
+            ->setContext($slug)
+            ->addMeta('Slug', $slug)
+            ->addMeta('Version', $data['Version'] ?? 'Not set')
+            ->addMeta('Network Wide', $networkWide ? 'Yes' : 'No')
+            ->send();
+    }
 
-	public function pluginDeleted($plugin_file, $deleted)
-	{
-		return Logtivity_Logger::log()
-					->setAction('Plugin Deleted')
-					->setContext($plugin_file)
-					->addMeta('Slug', $plugin_file)
-					->addMeta('Deletion Successful', $deleted)
-					->send();
-	}
+    /**
+     * @param string $slug
+     * @param bool   $networkDeactivating
+     *
+     * @return void
+     */
+    public function pluginDeactivated(string $slug, bool $networkDeactivating): void
+    {
+        Logtivity_Logger::log()
+            ->setAction('Plugin Deactivated')
+            ->setContext($slug)
+            ->addMeta('Slug', $slug)
+            ->addMeta('Network Deactivating', $networkDeactivating ? 'Yes' : 'No')
+            ->send();
+    }
 
-	public function upgradeProcessComplete( $upgrader_object, $options ) 
-	{
-	    if ( $options['type'] != 'plugin' ) {
-	    	return;
-	    }
+    /**
+     * @param string $pluginFile
+     * @param bool   $deleted
+     *
+     * @return void
+     */
+    public function pluginDeleted(string $pluginFile, bool $deleted): void
+    {
+        Logtivity_Logger::log()
+            ->setAction('Plugin Deleted')
+            ->setContext($pluginFile)
+            ->addMeta('Slug', $pluginFile)
+            ->addMeta('Deletion Successful', $deleted ? 'Yes' : 'No')
+            ->send();
+    }
 
-		if ($options['action'] == 'update') {
-			return $this->pluginUpdated($upgrader_object, $options);
-		}
+    /**
+     * @param WP_Upgrader $upgrader
+     * @param array       $options
+     *
+     * @return void
+     */
+    public function upgradeProcessComplete(WP_Upgrader $upgrader, array $options): void
+    {
+        $type = $options['type'] ?? null;
 
-		if ($options['action'] == 'install') {
-			return $this->pluginInstalled($upgrader_object, $options);
-		}
-	}
+        if ($type == 'plugin') {
+            $action = $options['action'] ?? null;
 
-	public function pluginUpdated($upgrader_object, $options)
-	{
-		if ( isset( $options['bulk'] ) && true == $options['bulk'] ) {
-			$slugs = $options['plugins'];
-		} else {
-			if ( ! isset( $upgrader->skin->plugin ) ) {
-				return;
-			}
-			
-			$slugs = array( $upgrader->skin->plugin );
-		}
-		
-		foreach ( $slugs as $slug ) 
-		{
-			$data = get_plugin_data( WP_PLUGIN_DIR . '/' . $slug, true, false );
-			
-			Logtivity_Logger::log()
-				->setAction('Plugin Updated')
-				->setContext($data['Name'])
-				->addMeta('Slug', $slug)
-				->addMeta('Version', ( isset($data['Version']) ? $data['Version'] : 'Not set'))
-				->addMeta('Bulk', $options['bulk'])
-				->send();
-		}
+            switch ($action) {
+                case 'update':
+                    $this->pluginUpdated($upgrader, $options);
+                    break;
 
-	}
+                case 'install':
+                    $this->pluginInstalled($upgrader);
+                    break;
+            }
+        }
+    }
 
-	public function pluginInstalled($upgrader_object, $options)
-	{
-		$path = $upgrader_object->plugin_info();
-		
-		if ( ! $path ) {
-			return;
-		}
-		
-		$data = get_plugin_data( $upgrader_object->skin->result['local_destination'] . '/' . $path, true, false );
-		
-		return Logtivity_Logger::log()
-					->setAction('Plugin Installed')
-					->setContext($data['Name'])
-					->addMeta('Slug', $path)
-					->addMeta('Version', $data['Version'])
-					->send();
-	}
+    /**
+     * @param WP_Upgrader $upgrader
+     * @param array       $options
+     *
+     * @return void
+     */
+    public function pluginUpdated(WP_Upgrader $upgrader, array $options): void
+    {
+        $bulk = $options['bulk'] ?? false;
+        if ($bulk) {
+            $slugs = $options['plugins'] ?? [];
 
-	public function pluginFileModified( $editable_extensions, $plugin ) {
+        } elseif ($upgrader->skin->plugin ?? false) {
+            $slugs = [$upgrader->skin->plugin];
 
-		if ( ! isset($_POST['action']) || $_POST['action'] != 'edit-theme-plugin-file' ) {
-			return $editable_extensions;
-		}
+        } else {
+            return;
+        }
 
-		if (!isset($_POST['plugin'])) {
-			return $editable_extensions;
-		}
+        foreach ($slugs as $slug) {
+            $data = get_plugin_data(WP_PLUGIN_DIR . '/' . $slug, true, false);
 
-		$log = Logtivity_Logger::log()->setAction('Plugin File Edited');
+            Logtivity_Logger::log()
+                ->setAction('Plugin Updated')
+                ->setContext($data['Name'])
+                ->addMeta('Slug', $slug)
+                ->addMeta('Version', $data['Version'] ?? 'Not set')
+                ->addMeta('Bulk', $bulk ? 'Yes' : 'No')
+                ->send();
+        }
+    }
 
-		if ( ! empty( $_REQUEST['file'] ) ) {
+    /**
+     * @param WP_Upgrader $upgrader
+     *
+     * @return void
+     */
+    public function pluginInstalled(WP_Upgrader $upgrader): void
+    {
+        if ($path = $upgrader->plugin_info()) {
+            $data = get_plugin_data($upgrader->skin->result['local_destination'] . '/' . $path, true, false);
 
-			$plugin_dir  = explode( '/', sanitize_text_field($_REQUEST['file'] ));
-			$plugin_data = array_values( get_plugins( '/' . $plugin_dir[0] ) );
-			$plugin_data = array_shift( $plugin_data );
+            Logtivity_Logger::log()
+                ->setAction('Plugin Installed')
+                ->setContext($data['Name'])
+                ->addMeta('Slug', $path)
+                ->addMeta('Version', $data['Version'])
+                ->send();
+        }
+    }
 
-			if ( ! empty( $_POST['file'] ) ) {
-				$log->addMeta('File', sanitize_text_field($_POST['file']));
-			}
+    /**
+     * @param string[] $defaultTypes
+     *
+     * @return array
+     */
+    public function pluginFileModified(array $defaultTypes): array
+    {
+        $action = sanitize_text_field($_POST['action'] ?? null);
+        if (
+            $action == 'edit-theme-plugin-file'
+            && isset($_POST['plugin'])
+        ) {
+            $log = Logtivity_Logger::log()->setAction('Plugin File Edited');
 
-			if ( isset($plugin_data['Name']) ) {
-				$log->setContext($plugin_data['Name']);
-			}
+            $file = sanitize_text_field($_REQUEST['file'] ?? null);
+            if ($file) {
+                $pluginData = array_values(get_plugins('/' . ltrim(dirname($file), '/')));
+                $pluginData = array_shift($pluginData);
 
-		}
+                $log->addMeta('File', $file);
 
-		$log->send();
+                if ($pluginName = ($pluginData['Name'] ?? null)) {
+                    $log->setContext($pluginName);
+                }
+            }
 
-		return $editable_extensions;
-	}
+            $log->send();
+        }
 
+        return $defaultTypes;
+    }
 }
 
-$Logtivity_Plugin = new Logtivity_Plugin;
+new Logtivity_Plugin();

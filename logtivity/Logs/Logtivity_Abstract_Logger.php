@@ -24,136 +24,141 @@
 
 abstract class Logtivity_Abstract_Logger
 {
-	protected $logger;
+    /**
+     * @var string[]
+     */
+    protected array $ignoredPostTypes = [
+        'revision',
+        'customize_changeset',
+        'nav_menu_item',
+        'edd_log',
+        'edd_payment',
+        'edd_license_log',
+    ];
 
-	protected $ignoredPostTypes = [
-		'revision', 
-		'customize_changeset', 
-		'nav_menu_item', 
-		'edd_log', 
-		'edd_payment',
-		'edd_license_log',
-	];
-	
-	protected $ignoredPostTitles = [
-		'Auto Draft',
-	];
-	
-	protected $ignoredPostStatuses = ['trash'];
+    /**
+     * @var string[]
+     */
+    protected array $ignoredPostTitles = [
+        'Auto Draft',
+    ];
 
-	public function __construct()
-	{
-		$this->registerHooks();
-	}
+    /**
+     * @var string[]
+     */
+    protected array $ignoredPostStatuses = ['trash'];
 
-	/**
-	 * Check against certain rules on whether we should ignore the logging of a certain post
-	 * 
-	 * @param  WP_Post $post
-	 * @return bool
-	 */
-	protected function shouldIgnore($post, $action = null)
-	{
-		if ($this->ignoringPostType($post->post_type)) {
-			return true;
-		}
+    public function __construct()
+    {
+        $this->registerHooks();
+    }
 
-		if ($this->ignoringPostTitle($post->post_title)) {
-			return true;
-		}
+    /**
+     * @param WP_Post $post
+     *
+     * @return bool
+     */
+    protected function shouldIgnore(WP_Post $post): bool
+    {
+        return $this->ignoringPostType($post->post_type)
+            || $this->ignoringPostTitle($post->post_title)
+            || $this->ignoringPostStatus($post->post_status)
+            || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE);
+    }
 
-		if ($this->ignoringPostStatus($post->post_status)) {
-			return true;
-		}
+    /**
+     * @param int $postId
+     *
+     * @return bool
+     */
+    protected function loggedRecently(int $postId): bool
+    {
+        $now = new DateTime();
 
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-			return true;
-		}
+        if ($date = get_post_meta($postId, 'logtivity_last_logged', true)) {
+            $lastLogged = $this->sanitizeDate($date);
 
-		return false;
-	}
+            $diffInSeconds = $now->getTimestamp() - $lastLogged->getTimestamp();
 
-	/**
-	 * Check to see if the request is Gutenbergs second request
-	 * 
-	 * @return bool
-	 */
-	protected function loggedRecently($postId)
-	{
-		$date = get_post_meta($postId, 'logtivity_last_logged', true);
+            return $diffInSeconds < 5;
+        }
 
-		if (!$date) {
-			return false;
-		}
+        return false;
+    }
 
-		$now = new DateTime();
-		$lastLogged = $this->sanitizeDate($date);
+    /**
+     * @param ?string $date
+     *
+     * @return DateTime
+     */
+    protected function sanitizeDate(?string $date): DateTime
+    {
+        try {
+            return new DateTime($date);
 
-		$diffInSeconds = $now->getTimestamp() - $lastLogged->getTimestamp();
+        } catch (Throwable $e) {
+            return new DateTime('1970-01-01');
+        }
+    }
 
-		return $diffInSeconds < 5;
-	}
+    /**
+     * Ignoring certain post statuses. Example: trash.
+     * We already have a postWasTrashed hook so
+     * don't need to log twice.
+     *
+     * @param ?string $postStatus
+     *
+     * @return bool
+     */
+    protected function ignoringPostStatus(?string $postStatus): bool
+    {
+        return in_array($postStatus, $this->ignoredPostStatuses);
+    }
 
-	protected function sanitizeDate( $date ) 
-	{
-		try {
-			return new \DateTime( $date );
-		} catch (\Throwable $e) {
-			return new \DateTime( '1970-01-01' );
-		} catch (\Exception $e) {
-			return new \DateTime( '1970-01-01' );
-		}
-	}
+    /**
+     * Ignoring certain post types. Particularly system generated
+     * that are not directly triggered by the user.
+     *
+     * @param ?string $postType
+     *
+     * @return bool
+     */
+    protected function ignoringPostType(?string $postType): bool
+    {
+        return in_array($postType, $this->ignoredPostTypes);
+    }
 
-	/**
-	 * Ignoring certain post statuses. Example: trash. 
-	 * We already have a postWasTrashed hook so 
-	 * don't need to log twice.
-	 * 
-	 * @param  string $post_status
-	 * @return bool
-	 */
-	protected function ignoringPostStatus($post_status)
-	{
-		return in_array($post_status, $this->ignoredPostStatuses);
-	}
+    /**
+     * Ignore certain system generated post titles
+     *
+     * @param ?string $title
+     *
+     * @return bool
+     */
+    protected function ignoringPostTitle(?string $title): bool
+    {
+        return in_array($title, $this->ignoredPostTitles);
+    }
 
-	/**	
-	 * Ignoring certain post types. Particularly system generated
-	 * that are not directly triggered by the user.
-	 * 
-	 * @param  string $post_type
-	 * @return bool
-	 */
-	protected function ignoringPostType($post_type)
-	{
-		return in_array($post_type, $this->ignoredPostTypes);
-	}
+    /**
+     * Generate a label version of the given post ids post type
+     *
+     * @param int $postId
+     *
+     * @return string
+     */
+    protected function getPostTypeLabel(int $postId): string
+    {
+        return $this->formatLabel(get_post_type($postId));
+    }
 
-	/**	
-	 * Ignore certain system generated post titles
-	 * 
-	 * @param  string $title
-	 * @return bool
-	 */
-	protected function ignoringPostTitle($title)
-	{
-		return in_array($title, $this->ignoredPostTitles);
-	}
-
-	/**	
-	 * Generate a label version of the given post ids post type
-	 * 
-	 * @param  integer $post_id
-	 * @return string
-	 */
-	protected function getPostTypeLabel($post_id)
-	{
-		return $this->formatLabel(get_post_type($post_id));
-	}
-
-	protected function formatLabel($label)
-	{
-		return ucwords( str_replace(['_', '-'], ' ', $label) );
-	}
+    /**
+     * @param string $label
+     *
+     * @return string
+     */
+    protected function formatLabel(string $label): string
+    {
+        return ucwords(str_replace(['_', '-'], ' ', $label));
+    }
 }

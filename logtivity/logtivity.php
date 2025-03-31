@@ -4,7 +4,7 @@
  * Plugin Name: Logtivity
  * Plugin URI:  https://logtivity.io
  * Description: Record activity logs and errors logs across all your WordPress sites.
- * Version:     3.1.5
+ * Version:     3.1.7
  * Author:      Logtivity
  * Text Domain: logtivity
  */
@@ -36,13 +36,13 @@
 
 class Logtivity
 {
-    public const ACCESS_LOGS = 'view_logs';
+    public const ACCESS_LOGS     = 'view_logs';
     public const ACCESS_SETTINGS = 'view_log_settings';
 
     /**
      * @var string
      */
-    protected string $version = '3.1.5';
+    protected string $version = '3.1.7';
 
     /**
      * List all classes here with their file paths. Keep class names the same as filenames.
@@ -128,22 +128,23 @@ class Logtivity
     {
         $this->loadDependencies();
 
+        add_action('plugins_loaded', [$this, 'updateCheck']);
+
+        add_action('upgrader_process_complete', [$this, 'upgradeProcessComplete'], 10, 2);
+        add_action('activated_plugin', [$this, 'setLogtivityToLoadFirst']);
+        add_action('admin_notices', [$this, 'welcomeMessage']);
+        add_action('admin_notices', [$this, 'checkForSiteUrlChange']);
+        add_action('admin_enqueue_scripts', [$this, 'loadScripts']);
+
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), [$this, 'addSettingsLinkFromPluginsPage']);
 
         register_activation_hook(__FILE__, [$this, 'activated']);
-
-        add_action('upgrader_process_complete', [$this, 'upgradeProcessComplete'], 10, 2);
-
-        add_action('activated_plugin', [$this, 'setLogtivityToLoadFirst']);
-
-        add_action('admin_notices', [$this, 'welcomeMessage']);
-
-        add_action('admin_notices', [$this, 'checkForSiteUrlChange']);
-
-        add_action('admin_enqueue_scripts', [$this, 'loadScripts']);
     }
 
-    public function loadDependencies()
+    /**
+     * @return void
+     */
+    public function loadDependencies(): void
     {
         foreach ($this->dependencies as $filePath) {
             $this->loadFile($filePath);
@@ -160,7 +161,12 @@ class Logtivity
         });
     }
 
-    public function loadFile($filePath)
+    /**
+     * @param string $filePath
+     *
+     * @return void
+     */
+    public function loadFile(string $filePath): void
     {
         require_once plugin_dir_path(__FILE__) . $filePath . '.php';
     }
@@ -175,14 +181,20 @@ class Logtivity
         return (bool)(new Logtivity_Options())->getOption('logtivity_disable_default_logging');
     }
 
-    public function maybeLoadLogClasses()
+    /**
+     * @return void
+     */
+    public function maybeLoadLogClasses(): void
     {
         foreach ($this->logClasses as $filePath) {
             $this->loadFile($filePath);
         }
     }
 
-    public function loadIntegrationDependencies()
+    /**
+     * @return void
+     */
+    public function loadIntegrationDependencies(): void
     {
         foreach ($this->integrationDependencies as $key => $value) {
             if (class_exists($key)) {
@@ -193,9 +205,16 @@ class Logtivity
         }
     }
 
-    public static function log($action = null, $meta = null, $user_id = null)
+    /**
+     * @param ?string $action
+     * @param ?array  $meta
+     * @param ?int    $userId
+     *
+     * @return ?mixed
+     */
+    public static function log(?string $action = null, ?array $meta = null, ?int $userId = null)
     {
-        return Logtivity_Logger::log($action, $meta, $user_id);
+        return Logtivity_Logger::log($action, $meta, $userId);
     }
 
     /**
@@ -209,12 +228,28 @@ class Logtivity
     }
 
     /**
-     * @param $upgraderObject
-     * @param $options
+     * Review updates based on version
      *
-     * @return null|void
+     * @return void
      */
-    public function upgradeProcessComplete($upgraderObject, $options)
+    public function updateCheck(): void
+    {
+        $currentVersion = get_option('logtivity_version');
+
+        if (version_compare($currentVersion, '3.1.7', '<')) {
+            static::checkCapabilities();
+        }
+
+        update_option('logtivity_version', $this->version);
+    }
+
+    /**
+     * @param WP_Upgrader $upgraderObject
+     * @param array       $options
+     *
+     * @return void
+     */
+    public function upgradeProcessComplete(WP_Upgrader $upgraderObject, array $options): void
     {
         $type   = $options['type'] ?? null;
         $action = $options['action'] ?? null;
@@ -264,20 +299,40 @@ class Logtivity
      */
     public function activated(): void
     {
-        if ($role = get_role('administrator')) {
-            if ($role->has_cap(Logtivity::ACCESS_LOGS) == false) {
-                $role->add_cap(Logtivity::ACCESS_LOGS);
-            }
-            if ($role->has_cap(Logtivity::ACCESS_SETTINGS) == false) {
-                $role->add_cap(Logtivity::ACCESS_SETTINGS);
-            }
-        }
+        static::checkCapabilities();
 
         if (apply_filters('logtivity_hide_settings_page', false)) {
             return;
         }
 
         set_transient('logtivity-welcome-notice', true, 5);
+    }
+
+    /**
+     * Custom capabilities added prior to v3.1.7
+     *
+     * @return void
+     */
+    public static function checkCapabilities(): void
+    {
+        $capabilities = array_filter(
+            array_keys(logtivity_get_capabilities()),
+            function (string $capability): bool {
+                return in_array($capability, [Logtivity::ACCESS_LOGS, Logtivity::ACCESS_SETTINGS]);
+            }
+        );
+
+        if ($capabilities == false) {
+            // Make sure at least admins can access us
+            if ($role = get_role('administrator')) {
+                if ($role->has_cap(Logtivity::ACCESS_LOGS) == false) {
+                    $role->add_cap(Logtivity::ACCESS_LOGS);
+                }
+                if ($role->has_cap(Logtivity::ACCESS_SETTINGS) == false) {
+                    $role->add_cap(Logtivity::ACCESS_SETTINGS);
+                }
+            }
+        }
     }
 
     /**

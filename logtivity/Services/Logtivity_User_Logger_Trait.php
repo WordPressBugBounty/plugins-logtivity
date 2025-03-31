@@ -22,82 +22,74 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+// phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
+
 trait Logtivity_User_Logger_Trait
 {
-	/**
-	 * Logtivity_Wp_User
-	 * 
-	 * @var object
-	 */
-	public $user;
-	
-	/**
-	 * Set the user for the current log instance
-	 * 
-	 * @param integer $user_id
-	 */
-	public function setUser($user_id = null)
-	{
-		$this->user = new Logtivity_Wp_User($user_id);
+    /**
+     * @var Logtivity_Wp_User
+     */
+    public Logtivity_Wp_User $user;
 
-		return $this;
-	}
+    /**
+     * @param ?int $userId
+     *
+     * @return $this
+     */
+    public function setUser(?int $userId = null): self
+    {
+        $this->user = new Logtivity_Wp_User($userId);
 
-	/**
-	 * Protected function to get the User ID if the user is logged in
-	 * 
-	 * @return mixed string|integer
-	 */
-	protected function getUserID()
-	{
-		if (!$this->options->shouldStoreUserId()) {
-			return;
-		}
+        return $this;
+    }
 
-		if (!$this->user->isLoggedIn()) {
-			return;
-		}
+    /**
+     * @return ?int
+     */
+    protected function getUserID(): ?int
+    {
+        if (
+            $this->options->shouldStoreUserId()
+            && $this->user->isLoggedIn()
+        ) {
+            return $this->user->id();
+        }
 
-		return $this->user->id();
-	}
+        return null;
+    }
 
-	/**
-	 * Maybe get the users IP address
-	 * 
-	 * @return string|false
-	 */
-	protected function maybeGetUsersIp()
-	{
-		if (!$this->options->shouldStoreIp()) {
-			return;
-		}
+    /**
+     * @return ?string
+     */
+    protected function maybeGetUsersIp(): ?string
+    {
+        if ($this->options->shouldStoreIp()) {
+            $ipAddress = filter_var(
+                ($_SERVER['HTTP_CLIENT_IP'] ?? '')
+                    ?: ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '')
+                    ?: $_SERVER['REMOTE_ADDR'] ?? '',
+                FILTER_VALIDATE_IP
+            );
 
-		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			//check ip from share internet
-			return $_SERVER['HTTP_CLIENT_IP'];
-		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			//to check ip is pass from proxy
-			return $_SERVER['HTTP_X_FORWARDED_FOR'];
-		} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			return $_SERVER['REMOTE_ADDR'];
-		}
-	}
+            return $ipAddress ?: null;
+        }
 
-	/**
-	 * Maybe get the users username
-	 * 
-	 * @return string|false
-	 */
-	protected function maybeGetUsersUsername()
-	{
-		if (!$this->options->shouldStoreUsername()) {
-			return null;
-		}
+        return null;
+    }
 
-		if (!$this->user->isLoggedIn()) {
-			return;
-		}
+    /**
+     * @return ?string
+     */
+    protected function maybeGetUsersUsername(): ?string
+    {
+        if (
+            $this->options->shouldStoreUsername()
+            && $this->user->isLoggedIn()
+        ) {
+            return $this->user->userLogin();
+        }
 
-		return $this->user->userLogin();
-	}
+        return null;
+    }
 }

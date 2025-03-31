@@ -22,120 +22,160 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
+// phpcs:disable Squiz.Classes.ValidClassName.NotCamelCaps
+
 class Logtivity_Error_Logger extends Logtivity_Api
 {
-	use Logtivity_User_Logger_Trait;
+    use Logtivity_User_Logger_Trait;
 
-	protected $active = true;
+    /**
+     * @var bool
+     */
+    protected bool $active = true;
 
-	protected $error;
+    /**
+     * @var array
+     */
+    protected array $error = [];
 
-	protected static $recordedErrors = [];
+    /**
+     * @var string[]
+     */
+    protected static array $recordedErrors = [];
 
-	public function __construct($error)
-	{
-		$this->error = $error;
+    /**
+     * @param array $error
+     */
+    public function __construct(array $error)
+    {
+        $this->error = $error;
 
-		$this->setUser();
+        $this->setUser();
 
-		parent::__construct();
-	}
+        parent::__construct();
+    }
 
-	public function stop()
-	{
-		$this->active = false;
+    /**
+     * @return $this
+     */
+    public function stop(): self
+    {
+        $this->active = false;
 
-		return $this;
-	}
+        return $this;
+    }
 
-	public function send()
-	{
-		if (in_array($this->error['message'], self::$recordedErrors)) {
-			return;
-		}
+    /**
+     * @return ?string
+     */
+    public function send(): ?string
+    {
+        $message = $this->error['message'] ?? '';
+        if (in_array($message, self::$recordedErrors) === false) {
+            self::$recordedErrors[] = $this->error['message'];
 
-		self::$recordedErrors[] = $this->error['message'];
+            do_action('wp_logtivity_error_logger_instance', $this);
 
-		do_action('wp_logtivity_error_logger_instance', $this);
+            if ($this->active) {
+                $response = $this->async()->makeRequest('/errors/store', $this->getData());
+            }
+        }
 
-		if (!$this->active) {
-			return;
-		}
+        return $response ?? null;
+    }
 
-		return $this->async()
-					->makeRequest(
-						'/errors/store', 
-						$this->getData()
-					);
-	}
+    /**
+     * @return array
+     */
+    public function getData(): array
+    {
+        $error = explode('Stack trace:', $this->error['message']);
 
-	public function getData()
-	{
-		$error = explode('Stack trace:', $this->error['message']);
+        return [
+            'type'               => $this->getErrorLevel($this->error['type']) ?? null,
+            'message'            => $error[0],
+            'stack_trace'        => $this->generateStackTrace(
+                [
+                    'file' => $this->error['file'] ?? null,
+                    'line' => $this->error['line'] ?? null,
+                ],
+                $error[1] ?? null
+            ),
+            'file'               => $this->error['file'] ?? null,
+            'line'               => $this->error['line'] ?? null,
+            'user_id'            => $this->getUserID(),
+            'username'           => $this->maybeGetUsersUsername(),
+            'ip_address'         => $this->maybeGetUsersIp(),
+            'user_authenticated' => $this->user->isLoggedIn(),
+            'url'                => $this->getCurrentUrl(),
+            'method'             => $this->getRequestMethod(),
+            'php_version'        => phpversion(),
+            'level'              => $this->error['level'] ?? null,
+        ];
+    }
 
-		return [
-			'type' => $this->getErrorLevel($this->error['type']) ?? null,
-			'message' => $error[0],
-			'stack_trace' => $this->generateStackTrace(
-				[
-					'file' => $this->error['file'] ?? null,
-					'line' => $this->error['line'] ?? null,
-				], 
-				$error[1] ?? null
-			),
-			'file' => $this->error['file'] ?? null,
-			'line' => $this->error['line'] ?? null,
-			'user_id' => $this->getUserID(),
-			'username' => $this->maybeGetUsersUsername(),
-			'ip_address' => $this->maybeGetUsersIp(),
-			'user_authenticated' => $this->user->isLoggedIn(),
-			'url' => $this->getCurrentUrl(),
-			'method' => $this->getRequestMethod(),
-			'php_version' => phpversion(),
-			'level' => $this->error['level'] ?? null,
-		];
-	}
+    /**
+     * @param array   $line
+     * @param ?string $stackTrace
+     *
+     * @return array
+     */
+    private function generateStackTrace(array $line, ?string $stackTrace): array
+    {
+        $stackTraceObject = new Logtivity_Stack_Trace();
 
-	private function generateStackTrace($line, $stackTrace)
-	{
-		$stackTraceObject = new Logtivity_Stack_Trace();
+        if (isset($this->error['stack_trace'])) {
+            return $stackTraceObject->createFromArray($this->error['stack_trace']);
+        }
 
-		if (isset($this->error['stack_trace'])) {
-			return $stackTraceObject->createFromArray($this->error['stack_trace']);
-		}
+        return array_merge(
+            [$stackTraceObject->createFileObject($line['file'], $line['line'])],
+            $stackTraceObject->createFromString($stackTrace)
+        );
+    }
 
-		return array_merge(
-			[$stackTraceObject->createFileObject($line['file'], $line['line'])],
-			$stackTraceObject->createFromString($stackTrace)
-		);
-	}
+    /**
+     * @return string
+     */
+    private function getRequestMethod(): string
+    {
+        return sanitize_text_field($_SERVER['REQUEST_METHOD'] ?? '');
+    }
 
-	private function getRequestMethod()
-	{
-		return $_SERVER['REQUEST_METHOD'] ?? null;
-	}
+    /**
+     * @return ?string
+     */
+    private function getCurrentUrl(): ?string
+    {
+        $host = sanitize_text_field($_SERVER['HTTP_HOST'] ?? null);
+        if ($host) {
+            $ssl = sanitize_text_field($_SERVER['HTTPS'] ?? 'off') != 'off'
+                || sanitize_text_field($_SERVER['SERVER_PORT'] ?? '80') == 443;
 
-	private function getCurrentUrl()
-	{
-		if (!isset($_SERVER['HTTP_HOST'])) {
-			return;
-		}
+            $protocol = $ssl ? 'https://' : 'http://';
 
-		$protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off') || isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+            $path = sanitize_text_field($_SERVER['REQUEST_URI'] ?? '');
 
-		$url = $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-		
-		if ($url == $protocol) {
-			return;
-		}
+            $url = sanitize_url($protocol . $host . $path);
 
-		return $url;
-	}
+            if ($url != $protocol) {
+                return $url;
+            }
+        }
 
-	private function getErrorLevel($level)
-	{
-	    $errorlevels = logtivity_get_error_levels();
+        return null;
+    }
 
-	    return isset($errorlevels[$level]) ? $errorlevels[$level] : $level;
-	}
+    /**
+     * @param $level
+     *
+     * @return string
+     */
+    private function getErrorLevel($level): string
+    {
+        $errorLevels = logtivity_get_error_levels();
+
+        return $errorLevels[$level] ?? $level;
+    }
 }

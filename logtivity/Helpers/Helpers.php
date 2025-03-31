@@ -119,11 +119,7 @@ function logtivity_has_site_url_changed(): bool
 {
     $hash = (new Logtivity_Options())->urlHash();
 
-    if (!$hash) {
-        return false;
-    }
-
-    return $hash !== md5(home_url());
+    return $hash != md5(home_url());
 }
 
 /**
@@ -143,4 +139,21 @@ function logtivity_get_error_levels(): array
     }
 
     return $errorLevels;
+}
+
+/**
+ * Get all known capabilities
+ *
+ * @return array
+ */
+function logtivity_get_capabilities(): array
+{
+    global $wp_roles;
+
+    $capabilities = [];
+    foreach ($wp_roles->roles as $key => $role ) {
+        $capabilities = array_merge($capabilities, $role['capabilities']);
+    }
+
+    return $capabilities;
 }
