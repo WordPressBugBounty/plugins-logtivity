@@ -99,7 +99,7 @@ class Logtivity_Options
      */
     public function getApiKey(): string
     {
-        return $this->getOption('logtivity_site_api_key');
+        return (string)$this->getOption('logtivity_site_api_key');
     }
 
     /**
