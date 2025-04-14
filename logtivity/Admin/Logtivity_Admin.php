@@ -158,8 +158,6 @@ class Logtivity_Admin
     }
 
     /**
-     * Update the settings
-     *
      * @return void
      */
     public function update(): void

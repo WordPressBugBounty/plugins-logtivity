@@ -67,14 +67,6 @@ class Logtivity_Logger extends Logtivity_Api
     public array $userMeta = [];
 
     /**
-     * When storing a log, generally we want to do this asynchronously
-     * so we won't wait for a response from the API by default.
-     *
-     * @var bool
-     */
-    public bool $waitForResponse = false;
-
-    /**
      * @param ?int $userId
      */
     public function __construct(?int $userId = null)
@@ -87,31 +79,39 @@ class Logtivity_Logger extends Logtivity_Api
     /**
      * Way into class.
      *
-     * @param ?string $action
-     * @param ?array  $meta
-     * @param ?int    $userId
+     * @param ?string        $action
+     * @param ?array|array[] $meta
+     * @param ?int           $userId
      *
-     * @return ?mixed
+     * @return Logtivity_Logger
      */
-    public static function log(?string $action = null, ?array $meta = null, ?int $userId = null)
+    public static function log(?string $action = null, ?array $meta = null, ?int $userId = null): Logtivity_Logger
     {
         $logtivityLogger = new Logtivity_Logger($userId);
 
-        if ($action === null) {
-            return new $logtivityLogger();
+        if ($action) {
+            $logtivityLogger->setAction($action);
         }
 
-        $logtivityLogger->setAction($action);
-
         if ($meta) {
+            // Convert legacy form to current
+            // @deprecated v3.1.8
             $key   = $meta['key'] ?? null;
             $value = $meta['value'] ?? null;
             if ($key && $value) {
-                $logtivityLogger->addMeta($key, $value);
+                $meta = [$key => $value];
+
+            }
+
+            if (array_is_list($meta) == false) {
+                // Associative array of keys and values
+                foreach ($meta as $key => $value) {
+                    $logtivityLogger->addMeta($key, $value);
+                }
             }
         }
 
-        return $logtivityLogger->send();
+        return $logtivityLogger;
     }
 
     /**
@@ -181,13 +181,13 @@ class Logtivity_Logger extends Logtivity_Api
     /**
      * Add the meta if the first condition is true
      *
-     * @param ?bool  $condition
+     * @param mixed  $condition
      * @param string $key
      * @param mixed  $value
      *
      * @return $this
      */
-    public function addMetaIf(?bool $condition, string $key, $value): self
+    public function addMetaIf($condition, string $key, $value): self
     {
         if ($condition) {
             $this->addMeta($key, $value);
@@ -214,16 +214,6 @@ class Logtivity_Logger extends Logtivity_Api
     /**
      * @return $this
      */
-    public function waitForResponse(): self
-    {
-        $this->waitForResponse = true;
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
     public function stop(): self
     {
         $this->active = false;
@@ -234,9 +224,9 @@ class Logtivity_Logger extends Logtivity_Api
     /**
      * Send the logged data to Logtivity
      *
-     * @return mixed
+     * @return ?array
      */
-    public function send()
+    public function send(): ?array
     {
         $this->maybeAddProfileLink();
 

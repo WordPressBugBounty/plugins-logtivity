@@ -25,9 +25,9 @@
 class Logtivity_Plugin extends Logtivity_Abstract_Logger
 {
     /**
-     * @return void
+     * @inheritDoc
      */
-    public function registerHooks(): void
+    protected function registerHooks(): void
     {
         add_action('activated_plugin', [$this, 'pluginActivated'], 10, 2);
         add_action('deactivated_plugin', [$this, 'pluginDeactivated'], 10, 2);
@@ -47,7 +47,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
     {
         $data = get_plugin_data(WP_PLUGIN_DIR . '/' . $slug, true, false);
 
-        Logtivity_Logger::log()
+        Logtivity::log()
             ->setAction('Plugin Activated')
             ->setContext($slug)
             ->addMeta('Slug', $slug)
@@ -64,7 +64,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
      */
     public function pluginDeactivated(string $slug, bool $networkDeactivating): void
     {
-        Logtivity_Logger::log()
+        Logtivity::log()
             ->setAction('Plugin Deactivated')
             ->setContext($slug)
             ->addMeta('Slug', $slug)
@@ -80,7 +80,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
      */
     public function pluginDeleted(string $pluginFile, bool $deleted): void
     {
-        Logtivity_Logger::log()
+        Logtivity::log()
             ->setAction('Plugin Deleted')
             ->setContext($pluginFile)
             ->addMeta('Slug', $pluginFile)
@@ -135,7 +135,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
         foreach ($slugs as $slug) {
             $data = get_plugin_data(WP_PLUGIN_DIR . '/' . $slug, true, false);
 
-            Logtivity_Logger::log()
+            Logtivity::log()
                 ->setAction('Plugin Updated')
                 ->setContext($data['Name'])
                 ->addMeta('Slug', $slug)
@@ -155,7 +155,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
         if ($path = $upgrader->plugin_info()) {
             $data = get_plugin_data($upgrader->skin->result['local_destination'] . '/' . $path, true, false);
 
-            Logtivity_Logger::log()
+            Logtivity::log()
                 ->setAction('Plugin Installed')
                 ->setContext($data['Name'])
                 ->addMeta('Slug', $path)
@@ -176,7 +176,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
             $action == 'edit-theme-plugin-file'
             && isset($_POST['plugin'])
         ) {
-            $log = Logtivity_Logger::log()->setAction('Plugin File Edited');
+            $log = Logtivity::log('Plugin File Edited');
 
             $file = sanitize_text_field($_REQUEST['file'] ?? null);
             if ($file) {

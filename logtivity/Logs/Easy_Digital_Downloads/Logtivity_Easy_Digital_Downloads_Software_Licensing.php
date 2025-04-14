@@ -43,7 +43,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 	{
 		$license = edd_software_licensing()->get_license($license_id);
 
-		Logtivity_Logger::log()
+		Logtivity::log()
 			->setAction('License Created')
 			->setContext($this->getDownloadTitle($license))
 			->setUser($license->user_id ?? null)
@@ -59,7 +59,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 	{
 		$license = edd_software_licensing()->get_license($args['key'], true);
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->addMeta('License Key', $args['key']);
 
 		if ( false !== $license ) {
@@ -72,7 +72,8 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 				if ($license->customer_id) {
 					$log->addMeta('Customer ID', $license->customer_id);
 				}
-			} catch (\Exception $e) {
+			} catch (Throwable $e) {
+                // Ignore
 			}
 		} else {
 			$log->setContext($args['key']);
@@ -81,7 +82,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 		if (isset($args['url'])) {
 			$log->addMeta('Site', $args['url']);
 		}
-		
+
 		if ($result['success']) {
 			$log->setAction('License Activated');
 
@@ -96,7 +97,8 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 			if (isset($result['expires']) && $result['expires']) {
 				try {
 					$log->addMeta('Expiration Date', date('M d Y', $result['expires']));
-				} catch (\Exception $e) {
+				} catch (Throwable $e) {
+                    // Ignore
 				}
 			}
 
@@ -104,10 +106,10 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 
 			return $result;
 		}
-	
+
 		$log->setAction('License Activation Failed')
 			->addMeta('Reason', $result['error'] ?? '');
-		
+
 		$log->send();
 
 		return $result;
@@ -134,7 +136,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 			}
 		}
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('License Deactivated')
 			->setContext($this->getDownloadTitle($license))
 			->addMeta('License Key', $this->deactivatingLicenseArgs['key']);
@@ -147,7 +149,8 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 				if ($license->customer_id) {
 					$log->addMeta('Customer ID', $license->customer_id);
 				}
-			} catch (\Exception $e) {
+			} catch (Throwable $e) {
+                // Ignore
 			}
 
 		$log->addMeta('Site', $this->deactivatingLicenseArgs['url'] ?? $domain ?? null)
@@ -158,7 +161,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 	{
 		$license = edd_software_licensing()->get_license($license_id);
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('License Upgraded')
 			->setContext($this->getDownloadTitle($license))
 			->addMeta('License Key', $license->key);
@@ -203,7 +206,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 	{
 		$license = edd_software_licensing()->get_license($license_id);
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('License Status Changed to ' . ucfirst($status))
 			->setContext($this->getDownloadTitle($license))
 			->addMeta('License Key', $license->key);
@@ -220,7 +223,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 	{
 		$license = edd_software_licensing()->get_license($license_id);
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('License Renewed')
 			->setContext($this->getDownloadTitle($license))
 			->addMeta('License Key', $license->key)
@@ -232,21 +235,22 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 
 		try {
 			$log->addMeta('New Expiration Date', date('M d Y', $new_expiration));
-		} catch (\Exception $e) {
+		} catch (Throwable $e) {
+            // Ignore
 		}
-		
+
 		$log->send();
 	}
 
 	/**
-	 * 
-	 * Taken from edd_sl_process_deactivate_site as there are no hooks for when a 
-	 * user deactivates a site from within their dashboard. 
-	 * 
+	 *
+	 * Taken from edd_sl_process_deactivate_site as there are no hooks for when a
+	 * user deactivates a site from within their dashboard.
+	 *
 	 * Use same validation code as in the original method, then log it.
-	 * 
+	 *
 	 */
-	public function siteDeactivated() 
+	public function siteDeactivated()
 	{
 		if ( ! wp_verify_nonce( $_GET['_wpnonce'], 'edd_deactivate_site_nonce' ) ) {
 			return;
@@ -276,7 +280,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 		 * If we've made it this far let's log it.
 		 */
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('Site Deactivated')
 			->setContext($this->getDownloadTitle($license))
 			->addMeta('License Key', $license->key)
@@ -290,19 +294,20 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 			if ($license->customer_id) {
 				$log->addMeta('Customer ID', $license->customer_id);
 			}
-		} catch (\Exception $e) {
+		} catch (Throwable $e) {
+            // Ignore
 		}
 
 		$log->send();
 	}
 
 	/**
-	 * 
-	 * Taken from edd_sl_process_add_site as there are no hooks for when a 
-	 * user adds a site from within their dashboard. 
-	 * 
+	 *
+	 * Taken from edd_sl_process_add_site as there are no hooks for when a
+	 * user adds a site from within their dashboard.
+	 *
 	 * Use same validation code as in the original method, then log it.
-	 * 
+	 *
 	 */
 	public function siteAdded()
 	{
@@ -336,7 +341,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 		 * If we've made it this far let's log it.
 		 */
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('Site Added')
 			->setContext($this->getDownloadTitle($license))
 			->addMeta('License Key', $license->key)
@@ -350,11 +355,12 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 			if ($license->customer_id) {
 				$log->addMeta('Customer ID', $license->customer_id);
 			}
-		} catch (\Exception $e) {
+		} catch (Throwable $e) {
+            // Ignore
 		}
 
 		$log->send();
 	}
 }
 
-$Logtivity_Easy_Digital_Downloads_Software_Licensing = new Logtivity_Easy_Digital_Downloads_Software_Licensing;
+new Logtivity_Easy_Digital_Downloads_Software_Licensing();

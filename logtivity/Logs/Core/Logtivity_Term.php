@@ -24,68 +24,62 @@
 
 class Logtivity_Term
 {
-	protected $ignoreTaxonomies = [
-		'nav_menu',
-		'edd_log_type',
-	];
+    protected $ignoreTaxonomies = [
+        'nav_menu',
+        'edd_log_type',
+    ];
 
-	public function __construct()
-	{
-		add_action( 'edited_terms', [$this, 'termUpdated'], 10, 2 );
-		add_action( 'created_term', [$this, 'termCreated'], 10, 3 );
-		add_action( 'delete_term', [$this, 'termDeleted'], 10, 5);
-	}
+    public function __construct()
+    {
+        add_action('edited_terms', [$this, 'termUpdated'], 10, 2);
+        add_action('created_term', [$this, 'termCreated'], 10, 3);
+        add_action('delete_term', [$this, 'termDeleted'], 10, 5);
+    }
 
-	public function termCreated($term_id, $tt_id, $taxonomy)
-	{
-		if (in_array($taxonomy, $this->ignoreTaxonomies)) {
-			return;
-		}
+    public function termCreated($term_id, $tt_id, $taxonomy)
+    {
+        if (in_array($taxonomy, $this->ignoreTaxonomies) == false) {
+            $term = get_term_by('id', $term_id, $taxonomy);
 
-		$term = get_term_by('id', $term_id, $taxonomy);
+            Logtivity::log()
+                ->setAction('Term Created')
+                ->setContext($term->name)
+                ->addMeta('Term ID', $term->term_id)
+                ->addMeta('Slug', $term->slug)
+                ->addMeta('Taxonomy', $term->taxonomy)
+                ->addMeta('Edit Link', get_edit_term_link($term))
+                ->send();
+        }
+    }
 
-		return Logtivity_Logger::log()
-			->setAction('Term Created')
-			->setContext($term->name) 
-			->addMeta('Term ID', $term->term_id)
-			->addMeta('Slug', $term->slug)
-			->addMeta('Taxonomy', $term->taxonomy)
-			->addMeta('Edit Link', get_edit_term_link($term))
-			->send();
-	}
+    public function termUpdated($term_id, $taxonomy)
+    {
+        if (in_array($taxonomy, $this->ignoreTaxonomies) == false) {
+            $term = get_term_by('id', $term_id, $taxonomy);
 
-	public function termUpdated($term_id, $taxonomy)
-	{
-		if (in_array($taxonomy, $this->ignoreTaxonomies)) {
-			return;
-		}
+            Logtivity::log()
+                ->setAction('Term Updated')
+                ->setContext($term->name)
+                ->addMeta('Term ID', $term->term_id)
+                ->addMeta('Slug', $term->slug)
+                ->addMeta('Taxonomy', $term->taxonomy)
+                ->addMeta('Edit Link', get_edit_term_link($term))
+                ->send();
+        }
+    }
 
-		$term = get_term_by('id', $term_id, $taxonomy);
-
-		return Logtivity_Logger::log()
-			->setAction('Term Updated')
-			->setContext($term->name) 
-			->addMeta('Term ID', $term->term_id)
-			->addMeta('Slug', $term->slug)
-			->addMeta('Taxonomy', $term->taxonomy)
-			->addMeta('Edit Link', get_edit_term_link($term))
-			->send();
-	}
-
-	public function termDeleted($term, $tt_id, $taxonomy, $deleted_term, $object_ids)
-	{
-		if (in_array($taxonomy, $this->ignoreTaxonomies)) {
-			return;
-		}
-
-		return Logtivity_Logger::log()
-			->setAction('Term Deleted')
-			->setContext($deleted_term->name) 
-			->addMeta('Term ID', $deleted_term->term_id)
-			->addMeta('Slug', $deleted_term->slug)
-			->addMeta('Taxonomy', $deleted_term->taxonomy)
-			->send();
-	}
+    public function termDeleted($term, $tt_id, $taxonomy, $deleted_term, $object_ids)
+    {
+        if (in_array($taxonomy, $this->ignoreTaxonomies) == false) {
+            Logtivity::log()
+                ->setAction('Term Deleted')
+                ->setContext($deleted_term->name)
+                ->addMeta('Term ID', $deleted_term->term_id)
+                ->addMeta('Slug', $deleted_term->slug)
+                ->addMeta('Taxonomy', $deleted_term->taxonomy)
+                ->send();
+        }
+    }
 }
 
-$Logtivity_Term = new Logtivity_Term;
+new Logtivity_Term();

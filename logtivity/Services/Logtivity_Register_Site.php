@@ -22,6 +22,9 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @TODO: Review. Can be used to register sites via team api
+ */
 class Logtivity_Register_Site
 {
 	public static function execute($data = [])
@@ -30,7 +33,7 @@ class Logtivity_Register_Site
 
 		if ($logtivity_options->getApiKey()) {
 		    return new WP_Error(
-		    	'logtivity_register_site_error', 
+		    	'logtivity_register_site_error',
 		    	__('You cannot register a site that already has an API Key.', 'logtivity')
 		    );
 		}

@@ -41,7 +41,7 @@ class Logtivity_WP_All_Import
 
 	public function importRunning($import_id)
 	{
-		Logtivity_Logger::log()
+		Logtivity::log()
 			->setAction('All Import Running')
 			->setContext($import_id)
 			->addMeta('Import ID', $import_id)
@@ -50,7 +50,7 @@ class Logtivity_WP_All_Import
 
 	public function importCompleted($import_id, $import)
 	{
-		Logtivity_Logger::log()
+		Logtivity::log()
 			->setAction('All Import Completed')
 			->setContext($import_id)
 			->addMeta('Import ID', $import_id)
@@ -92,17 +92,17 @@ class Logtivity_WP_All_Import
     public function wp_all_import_get_import_id() {
         global $argv;
         $import_id = 'new';
-            
+
         if ( ! empty( $argv ) ) {
             $import_id_arr = array_filter( $argv, function( $a ) {
                 return ( is_numeric( $a ) ) ? true : false;
             });
-                
+
             if ( ! empty( $import_id_arr ) ) {
                 $import_id = reset( $import_id_arr );
             }
         }
-    
+
         if ( $import_id == 'new' ) {
             if ( isset( $_GET['import_id'] ) ) {
                 $import_id = intval($_GET['import_id']);

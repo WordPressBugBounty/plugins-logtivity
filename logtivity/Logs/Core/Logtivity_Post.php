@@ -39,9 +39,9 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
     protected ?string $action = null;
 
     /**
-     * @return void
+     * @inheritDoc
      */
-    public function registerHooks(): void
+    protected function registerHooks(): void
     {
         add_action('transition_post_status', [$this, 'postStatusChanged'], 10, 3);
         add_action('save_post', [$this, 'postWasUpdated'], 10, 3);
@@ -79,7 +79,7 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
                     $newStatus
                 );
 
-                Logtivity_Logger::log()
+                Logtivity::log()
                     ->setAction($action)
                     ->setContext($post->post_title)
                     ->setPostType($post->post_type)
@@ -106,7 +106,7 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
         ) {
             $revision = $this->getRevision($postId);
 
-            Logtivity_Logger::log()
+            Logtivity::log()
                 ->setAction($this->action ?: $this->getPostTypeLabel($post->ID) . ' Updated')
                 ->setContext($post->post_title)
                 ->setPostType($post->post_type)
@@ -155,7 +155,7 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
     public function postWasTrashed(int $postId): void
     {
         if (get_post_type($postId) != 'customize_changeset') {
-            Logtivity_Logger::log()
+            Logtivity::log()
                 ->setAction($this->getPostTypeLabel($postId) . ' Trashed')
                 ->setContext(logtivity_get_the_title($postId))
                 ->setPostType(get_post_type($postId))
@@ -174,7 +174,7 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
     {
         $action = $this->getPostTypeLabel($post->ID) . ' Restored from Trash';
 
-        Logtivity_Logger::log()
+        Logtivity::log()
             ->setAction($action)
             ->setContext($post->post_title)
             ->setPostType($post->post_type)
@@ -194,7 +194,7 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
             $this->ignoringPostType(get_post_type($postId)) == false
             && $this->ignoringPostTitle(logtivity_get_the_title($postId)) == false
         ) {
-            Logtivity_Logger::log()
+            Logtivity::log()
                 ->setAction(
                     $this->getPostTypeLabel($postId) . ' Permanently Deleted'
                 )
@@ -214,7 +214,7 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
      */
     public function mediaUploaded(array $upload, string $context): array
     {
-        Logtivity_Logger::log()
+        Logtivity::log()
             ->setAction('Attachment Uploaded')
             ->setContext(basename($upload['file']))
             ->addMeta('Url', $upload['url'])

@@ -54,6 +54,11 @@ abstract class Logtivity_Abstract_Logger
     }
 
     /**
+     * @return void
+     */
+    abstract protected function registerHooks(): void;
+
+    /**
      * @param WP_Post $post
      *
      * @return bool

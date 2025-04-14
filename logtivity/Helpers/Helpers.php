@@ -59,18 +59,6 @@ function logtivity_view(string $fileName, array $vars = []): string
 }
 
 /**
- * Get Site API Key
- *
- * @return string
- */
-function logtivity_get_api_key(): string
-{
-    return sanitize_text_field(
-        (new Logtivity_Options())->getOption('logtivity_site_api_key')
-    );
-}
-
-/**
  * @param int $postId
  *
  * @return string
@@ -148,11 +136,11 @@ function logtivity_get_error_levels(): array
  */
 function logtivity_get_capabilities(): array
 {
-    global $wp_roles;
-
     $capabilities = [];
-    foreach ($wp_roles->roles as $key => $role ) {
-        $capabilities = array_merge($capabilities, $role['capabilities']);
+    if ($roles = wp_roles()) {
+        foreach ($roles->roles as $role) {
+            $capabilities = array_merge($capabilities, $role['capabilities']);
+        }
     }
 
     return $capabilities;

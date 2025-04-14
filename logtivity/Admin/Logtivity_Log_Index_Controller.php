@@ -39,28 +39,27 @@ class Logtivity_Log_Index_Controller
      */
     public function search(): void
     {
-        if (!current_user_can(Logtivity::ACCESS_LOGS)) {
-            wp_die(__('You do not have sufficient permissions to access this page.'));
+        if (current_user_can(Logtivity::ACCESS_LOGS)) {
+            $response = (new Logtivity_Api())
+                ->get(
+                    '/logs',
+                    [
+                        'page'        => $this->getInput('page'),
+                        'action'      => $this->getInput('search_action'),
+                        'context'     => $this->getInput('search_context'),
+                        'action_user' => $this->getInput('action_user'),
+                    ]
+                );
+
+            if ($response) {
+                $this->successResponse(json_decode(json_encode($response)));
+
+            } else {
+                $this->errorResponse((new Logtivity_Api())->getConnectionMessage());
+            }
+        } else {
+            $this->errorResponse(__('You do not have sufficient permissions to access this page.'));
         }
-
-        $response = json_decode(
-            (new Logtivity_Api())->get('/logs', [
-                'page'        => $this->getInput('page'),
-                'action'      => $this->getInput('search_action'),
-                'context'     => $this->getInput('search_context'),
-                'action_user' => $this->getInput('action_user'),
-            ])
-        );
-
-        if (!$response) {
-            $this->errorReponse('Please connect to Logtivity.');
-        }
-
-        if (property_exists($response, 'message') && $response->message) {
-            $this->errorReponse($response->message);
-        }
-
-        $this->successResponse($response);
     }
 
     /**
@@ -84,7 +83,7 @@ class Logtivity_Log_Index_Controller
      *
      * @return void
      */
-    private function errorReponse(string $message): void
+    private function errorResponse(string $message): void
     {
         wp_send_json([
             'view' => logtivity_view('_logs-loop', [

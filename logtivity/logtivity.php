@@ -1,12 +1,17 @@
 <?php
 
 /**
- * Plugin Name: Logtivity
- * Plugin URI:  https://logtivity.io
- * Description: Record activity logs and errors logs across all your WordPress sites.
- * Version:     3.1.7
- * Author:      Logtivity
- * Text Domain: logtivity
+ * Plugin Name:       Logtivity
+ * Plugin URI:        https://logtivity.io
+ * Description:       Record activity logs and errors logs across all your WordPress sites.
+ * Version:           3.1.8
+ * Author:            Logtivity
+ * Text Domain:       logtivity
+ * Requires at least: 4.7
+ * Tested up to:      6.7
+ * Stable tag:        3.1.8
+ * Requires PHP:      7.4
+ * License:           GPLv2 or later
  */
 
 /**
@@ -42,7 +47,7 @@ class Logtivity
     /**
      * @var string
      */
-    protected string $version = '3.1.7';
+    protected string $version = '3.1.8';
 
     /**
      * List all classes here with their file paths. Keep class names the same as filenames.
@@ -50,6 +55,7 @@ class Logtivity
      * @var string[]
      */
     private array $dependencies = [
+        'Helpers/Compatibility',
         'Helpers/Helpers',
         'Helpers/Logtivity_Wp_User',
         'Admin/Logtivity_Log_Index_Controller',
@@ -128,8 +134,6 @@ class Logtivity
     {
         $this->loadDependencies();
 
-        add_action('plugins_loaded', [$this, 'updateCheck']);
-
         add_action('upgrader_process_complete', [$this, 'upgradeProcessComplete'], 10, 2);
         add_action('activated_plugin', [$this, 'setLogtivityToLoadFirst']);
         add_action('admin_notices', [$this, 'welcomeMessage']);
@@ -151,6 +155,8 @@ class Logtivity
         }
 
         add_action('plugins_loaded', function () {
+            $this->updateCheck();
+
             if ($this->defaultLoggingDisabled()) {
                 return;
             }
@@ -210,9 +216,9 @@ class Logtivity
      * @param ?array  $meta
      * @param ?int    $userId
      *
-     * @return ?mixed
+     * @return Logtivity_Logger
      */
-    public static function log(?string $action = null, ?array $meta = null, ?int $userId = null)
+    public static function log(?string $action = null, ?array $meta = null, ?int $userId = null): Logtivity_Logger
     {
         return Logtivity_Logger::log($action, $meta, $userId);
     }
@@ -236,8 +242,13 @@ class Logtivity
     {
         $currentVersion = get_option('logtivity_version');
 
-        if (version_compare($currentVersion, '3.1.7', '<')) {
+        if (version_compare($currentVersion, '3.1.6', '<=')) {
             static::checkCapabilities();
+        }
+
+        if ($currentVersion && version_compare($currentVersion, '3.1.7', '<=')) {
+            // Default for updating sites should be no behavior change
+            update_option('logtivity_app_verify_url', 0);
         }
 
         update_option('logtivity_version', $this->version);

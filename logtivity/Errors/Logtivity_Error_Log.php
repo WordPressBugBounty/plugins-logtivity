@@ -24,156 +24,195 @@
 
 class Logtivity_Error_Log
 {
-	private $errorHandler;
+    /**
+     * @var ?callable
+     */
+    private $errorHandler;
 
-	private $exceptionHandler;
+    /**
+     * @var ?callable
+     */
+    private $exceptionHandler;
 
-	public function __construct()
-	{
-		$this->errorHandler = set_error_handler([$this, 'errorHandler']);
+    public function __construct()
+    {
+        $this->errorHandler = set_error_handler([$this, 'errorHandler']);
 
-		$this->exceptionHandler = set_exception_handler([$this, 'exceptionHandler']);
-	}
+        $this->exceptionHandler = set_exception_handler([$this, 'exceptionHandler']);
+    }
 
-	public function errorHandler( $code, $message, $file = '', $line = 0 )
-	{
-		try {
-			if (isset($_SERVER['HTTP_HOST'])) {
-		        $stack_trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS & ~DEBUG_BACKTRACE_PROVIDE_OBJECT);
-			} else {
-				$stack_trace = [
-					[
-						'line' => $file,
-						'file' => $line,
-					]
-				];
-			}
+    /**
+     * @param int     $code
+     * @param string  $message
+     * @param ?string $file
+     * @param ?int    $line
+     *
+     * @return bool
+     */
+    public function errorHandler(
+        int $code,
+        string $message,
+        ?string $file = null,
+        ?int $line = null
+    ): bool {
+        try {
+            if (isset($_SERVER['HTTP_HOST'])) {
+                $stackTrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS & ~DEBUG_BACKTRACE_PROVIDE_OBJECT);
+            } else {
+                $stackTrace = [
+                    [
+                        'line' => $file,
+                        'file' => $line,
+                    ],
+                ];
+            }
 
-			$error = [
-				'type' => $code,
-				'message' => $message,
-				'file' => $file,
-				'line' => $line,
-				'stack_trace' => $stack_trace,
-				'level' => 'warning',
-			];
+            $error = [
+                'type'        => $code,
+                'message'     => $message,
+                'file'        => $file,
+                'line'        => $line,
+                'stack_trace' => $stackTrace,
+                'level'       => 'warning',
+            ];
 
-			if ($this->shouldIgnore($error, 'warnings')) {
-				return;
-			}
+            if ($this->shouldIgnore($error, 'warnings')) {
+                return false;
+            }
 
-			Logtivity::logError($error)->send();
-		} catch (\Throwable $e) {
-		  
-		} catch (\Exception $e) {
-		  
-		}
+            Logtivity::logError($error)->send();
 
-		if ($this->errorHandler) {
-			return call_user_func($this->errorHandler, $code, $message, $file, $line);
-		}
-	}
+        } catch (Throwable $e) {
+            // Ignore
+        }
 
-	public function exceptionHandler(Throwable $throwable)
-	{
-		try {
-			if (isset($_SERVER['HTTP_HOST'])) {
-				$stack_trace = array_merge(
-					[
-						[
-							'line' => $throwable->getLine(),
-							'file' => $throwable->getFile(),
-						]
-					],
-					$throwable->getTrace()
-				);
-			} else {
-				$stack_trace = [
-					[
-						'line' => $throwable->getLine(),
-						'file' => $throwable->getFile(),
-					]
-				];
-			}
+        if ($this->errorHandler) {
+            return ($this->errorHandler)($code, $message, $file, $line);
+        }
 
-			$error = [
-				'type' => get_class($throwable),
-				'message' => $throwable->getMessage(),
-				'file' => $throwable->getFile(),
-				'line' => $throwable->getLine(),
-				'stack_trace' => $stack_trace,
-				'level' => 'error',
-			];
+        return false;
+    }
 
-			if ($this->shouldIgnore($error, 'errors')) {
-				return;
-			}
-		
-			Logtivity::logError($error)->send();
-		} catch (\Throwable $e) {
-		  
-		} catch (\Exception $e) {
-		  
-		}
+    /**
+     * @param Throwable $throwable
+     *
+     * @return void
+     */
+    public function exceptionHandler(Throwable $throwable): void
+    {
+        try {
+            if (isset($_SERVER['HTTP_HOST'])) {
+                $stackTrace = array_merge(
+                    [
+                        [
+                            'line' => $throwable->getLine(),
+                            'file' => $throwable->getFile(),
+                        ],
+                    ],
+                    $throwable->getTrace()
+                );
+            } else {
+                $stackTrace = [
+                    [
+                        'line' => $throwable->getLine(),
+                        'file' => $throwable->getFile(),
+                    ],
+                ];
+            }
 
-		if ($this->exceptionHandler) {
-			call_user_func($this->exceptionHandler, $throwable);
-		}
-	}
+            $error = [
+                'type'        => get_class($throwable),
+                'message'     => $throwable->getMessage(),
+                'file'        => $throwable->getFile(),
+                'line'        => $throwable->getLine(),
+                'stack_trace' => $stackTrace,
+                'level'       => 'error',
+            ];
 
-	private function shouldIgnore($error, $type)
-	{
-		if (E_WARNING === $error['type'] && false !== strpos($error['message'], 'unlink')) {
-			return true;
-		}
+            if ($this->shouldIgnore($error, 'errors')) {
+                return;
+            }
 
-		if ($this->loggingDisabled()) {
-			return true;
-		}
+            Logtivity::logError($error)->send();
 
-		if ($this->isErrorTypeDisabled($error, $type)) {
-			return true;
-		}
+        } catch (Throwable $e) {
+            // Ignore
+        }
 
-		if ($this->maybeRateLimit($error)) {
-			return true;
-		}
+        if ($this->exceptionHandler) {
+            ($this->exceptionHandler)($throwable);
+        }
+    }
 
-		return apply_filters('logtivity_should_ignore_error', false, $error);
-	}
+    /**
+     * @param array  $error
+     * @param string $type
+     *
+     * @return bool
+     */
+    private function shouldIgnore(array $error, string $type): bool
+    {
+        $errorType    = $error['type'] ?? null;
+        $errorMessage = $error['message'] ?? null;
 
-	public function maybeRateLimit($error)
-	{
-		if (!is_int($error['type'])) {
-			return false;
-		}
+        if (
+            ($errorType == E_WARNING && strpos($errorMessage, 'unlink') !== false)
+            || $this->loggingDisabled()
+            || $this->isErrorTypeDisabled($type)
+            || $this->maybeRateLimit($error)
+        ) {
+            return true;
+        }
 
-		if (in_array($error['type'], [E_ERROR, E_PARSE])) {
-			return false;
-		}
+        return apply_filters('logtivity_should_ignore_error', false, $error);
+    }
 
-		$hash = md5($error['message']);
+    /**
+     * @param array $error
+     *
+     * @return bool
+     */
+    public function maybeRateLimit(array $error): bool
+    {
+        $errorType = $error['type'] ?? null;
 
-		if (false === ($transient = get_transient('logtivity_'.$hash))) {
-			set_transient( 'logtivity_'.$hash, true, 24 * HOUR_IN_SECONDS );
-			return false;
-		}
+        if (
+            is_int($errorType)
+            && in_array($errorType, [E_ERROR, E_PARSE]) == false
+        ) {
+            // Most error types are rate limited to once/24 hours
+            $hash = md5($error['message']);
 
-		return true;
-	}
+            if (get_transient('logtivity_' . $hash) === false) {
+                set_transient('logtivity_' . $hash, true, 24 * HOUR_IN_SECONDS);
 
-	public function isErrorTypeDisabled($error, $type)
-	{
-		return in_array(
-			$type,
-			(new Logtivity_Options)->disabledErrorLevels()
-		);
-	}
+                return false;
+            }
+        }
 
-	public function loggingDisabled()
-	{
-		return (new Logtivity_Options)->getOption('logtivity_disable_error_logging');
-	}
+        return true;
+    }
+
+    /**
+     * @param string $type
+     *
+     * @return bool
+     */
+    public function isErrorTypeDisabled(string $type): bool
+    {
+        return in_array(
+            $type,
+            (new Logtivity_Options())->disabledErrorLevels()
+        );
+    }
+
+    /**
+     * @return bool
+     */
+    public function loggingDisabled(): bool
+    {
+        return (bool)(new Logtivity_Options())->getOption('logtivity_disable_error_logging');
+    }
 }
 
-$Logtivity_Error_Log = new Logtivity_Error_Log;
+new Logtivity_Error_Log();

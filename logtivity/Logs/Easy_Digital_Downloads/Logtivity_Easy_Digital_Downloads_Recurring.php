@@ -38,7 +38,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 	{
 		$payment = new EDD_Payment($payment_id);
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('Subscription Renewed')
 			->setContext($this->getDownloadTitle($subscription));
 
@@ -53,7 +53,8 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 			if (isset($expiration) && $expiration) {
 				try {
 					$log->addMeta('Expiration Date', date('M d Y', strtotime($expiration)));
-				} catch (\Exception $e) {
+				} catch (Throwable $e) {
+                    // Ignore
 				}
 			}
 
@@ -65,7 +66,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 	{
 		$subscription = new EDD_Subscription($subscription_id);
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('Subscription Created')
 			->setContext($this->getDownloadTitle($subscription))
 			->addMeta('Customer ID', $subscription->customer_id)
@@ -74,7 +75,8 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 		if (isset($args['expiration']) && $args['expiration']) {
 			try {
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($args['expiration'])));
-			} catch (\Exception $e) {
+			} catch (Throwable $e) {
+                // Ignore
 			}
 		}
 
@@ -83,7 +85,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 
 	public function subscriptionUpdated($subscription_id, $args, $subscription)
 	{
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('Subscription Updated');
 
 		$current_product  = $subscription->product_id;
@@ -120,7 +122,8 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 		if ($subscription->expiration) {
 			try {
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
-			} catch (\Exception $e) {
+			} catch (Throwable $e) {
+                // Ignore
 			}
 		}
 
@@ -133,7 +136,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 			return;
 		}
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('Subscription '. ucfirst($new_status))
 			->setContext($this->getDownloadTitle($subscription))
 			->addMeta('Old Status', $old_status)
@@ -147,7 +150,8 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 		if ($subscription->expiration) {
 			try {
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
-			} catch (\Exception $e) {
+			} catch (Throwable $e) {
+                // Ignore
 			}
 		}
 
@@ -156,7 +160,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 
 	public function subscriptionDeleted($subscription)
 	{
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('Subscription Deleted')
 			->setContext($this->getDownloadTitle($subscription))
 			->addMeta('Customer ID', $subscription->customer_id)
@@ -169,7 +173,8 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 		if ($subscription->expiration) {
 			try {
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
-			} catch (\Exception $e) {
+			} catch (Throwable $e) {
+                // Ignore
 			}
 		}
 
@@ -191,7 +196,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 			return;
 		}
 
-		$log = Logtivity_Logger::log()
+		$log = Logtivity::log()
 			->setAction('Payment Method Updated')
 			->setContext($subscription->gateway)
 			->addMeta('Customer ID', $subscription->customer_id)
@@ -204,7 +209,8 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 		if ($subscription->expiration) {
 			try {
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
-			} catch (\Exception $e) {
+			} catch (Throwable $e) {
+                // Ignore
 			}
 		}
 
@@ -212,4 +218,4 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 	}
 }
 
-$Logtivity_Easy_Digital_Downloads_Recurring = new Logtivity_Easy_Digital_Downloads_Recurring;
+new Logtivity_Easy_Digital_Downloads_Recurring();

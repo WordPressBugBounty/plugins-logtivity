@@ -33,42 +33,26 @@ class Logtivity_Options
      * @var array
      */
     protected array $settings = [
-        'logtivity_site_api_key'                 => null,
-        'logtivity_disable_default_logging'      => null,
-        'logtivity_enable_options_table_logging' => null,
-        'logtivity_enable_post_meta_logging'     => null,
-        'logtivity_should_store_user_id'         => 1,
-        'logtivity_should_store_ip'              => 1,
-        'logtivity_should_log_profile_link'      => 1,
-        'logtivity_should_log_username'          => 1,
-        'logtivity_disable_individual_logs'      => null,
-        'logtivity_enable_debug_mode'            => null,
-        'logtivity_latest_response'              => null,
-        'logtivity_api_key_check'                => null,
-        'logtivity_url_hash'                     => null,
-        'logtivity_global_disabled_logs'         => null,
-        'logtivity_enable_white_label_mode'      => null,
-        'logtivity_disable_error_logging'        => null,
-        'logtivity_disabled_error_levels'        => null,
-        'logtivity_hide_plugin_from_ui'          => null,
-        'logtivity_custom_plugin_name'           => null,
-    ];
-
-    /**
-     * The option keys that we can save to the options table
-     *
-     * @var array
-     */
-    protected array $rules = [
-        'logtivity_site_api_key'            => 'is_string',
-        'logtivity_disable_default_logging' => 'is_bool',
-        'logtivity_should_store_user_id'    => 'is_bool',
-        'logtivity_should_store_ip'         => 'is_bool',
-        'logtivity_should_log_profile_link' => 'is_bool',
-        'logtivity_should_log_username'     => 'is_bool',
-        'logtivity_enable_debug_mode'       => 'is_bool',
-        'logtivity_latest_response'         => 'is_array',
-        'logtivity_disable_individual_logs' => 'is_string',
+        'logtivity_api_key_check'                => ['rule' => 'is_string', 'default' => null],
+        'logtivity_app_verify_url'               => ['rule' => 'is_bool', 'default' => 1],
+        'logtivity_custom_plugin_name'           => ['rule' => 'is_string', 'default' => null],
+        'logtivity_disable_default_logging'      => ['rule' => 'is_bool', 'default' => null],
+        'logtivity_disable_error_logging'        => ['rule' => 'is_bool', 'default' => null],
+        'logtivity_disable_individual_logs'      => ['rule' => 'is_string', 'default' => null],
+        'logtivity_disabled_error_levels'        => ['rule' => 'is_array', 'default' => null],
+        'logtivity_enable_debug_mode'            => ['rule' => 'is_bool', 'default' => null],
+        'logtivity_enable_options_table_logging' => ['rule' => 'is_bool', 'default' => null],
+        'logtivity_enable_post_meta_logging'     => ['rule' => 'is_bool', 'default' => null],
+        'logtivity_enable_white_label_mode'      => ['rule' => 'is_bool', 'default' => null],
+        'logtivity_global_disabled_logs'         => ['rule' => 'is_string', 'default' => null],
+        'logtivity_hide_plugin_from_ui'          => ['rule' => 'is_bool', 'default' => null],
+        'logtivity_latest_response'              => ['rule' => 'is_array', 'default' => null],
+        'logtivity_should_log_profile_link'      => ['rule' => 'is_bool', 'default' => 1],
+        'logtivity_should_log_username'          => ['rule' => 'is_bool', 'default' => 1],
+        'logtivity_should_store_ip'              => ['rule' => 'is_bool', 'default' => 1],
+        'logtivity_should_store_user_id'         => ['rule' => 'is_bool', 'default' => 1],
+        'logtivity_site_api_key'                 => ['rule' => 'is_string', 'default' => null],
+        'logtivity_url_hash'                     => ['rule' => 'is_string', 'default' => null],
     ];
 
     /**
@@ -80,7 +64,7 @@ class Logtivity_Options
     {
         $options = [];
 
-        foreach ($this->settings as $setting => $default) {
+        foreach ($this->settings as $setting => $rules) {
             $options[$setting] = $this->getOption($setting);
         }
 
@@ -91,6 +75,7 @@ class Logtivity_Options
      * Get an option from the database
      *
      * @param string $key
+     *
      * @return mixed
      */
     public function getOption(string $key)
@@ -99,11 +84,12 @@ class Logtivity_Options
             return apply_filters($key, false);
         }
 
-        if (array_key_exists($key, $this->settings)) {
-            return get_option($key, $this->settings[$key]);
+        $setting = $this->settings[$key] ?? null;
+        if ($setting) {
+            $value = get_option($key, $setting['default'] ?? null);
         }
 
-        return false;
+        return $value ?? null;
     }
 
     /**
@@ -111,7 +97,7 @@ class Logtivity_Options
      *
      * @return string
      */
-    public function getApiKey()
+    public function getApiKey(): string
     {
         return $this->getOption('logtivity_site_api_key');
     }
@@ -184,9 +170,10 @@ class Logtivity_Options
     public function shouldCheckInWithApi(): bool
     {
         $latestResponse = get_option('logtivity_last_settings_check_in_at');
+        $lastCheckin    = $latestResponse['date'] ?? null;
 
-        if (is_array($latestResponse) && isset($latestResponse['date'])) {
-            return time() - strtotime($latestResponse['date']) > 10 * MINUTE_IN_SECONDS; // 10 minutes
+        if ($lastCheckin) {
+            return time() - strtotime($lastCheckin) > 10 * MINUTE_IN_SECONDS;
         }
 
         return true;
@@ -268,37 +255,30 @@ class Logtivity_Options
      */
     public function checkApiKey(?string $apiKey): void
     {
-        delete_option('logtivity_api_key_check');
-
         if ($apiKey) {
-            $response = Logtivity::log()
+            Logtivity::log()
                 ->setAction('Settings Updated')
                 ->setContext('Logtivity')
+                ->ignoreStatus()
                 ->waitForResponse()
                 ->send();
-
-            if (strpos($response, 'Log Received') !== false) {
-                update_option('logtivity_api_key_check', 'success');
-
-                return;
-            }
         }
-
-        update_option('logtivity_api_key_check', 'fail');
     }
 
     /**
      * Validate that the passed parameters are in the correct format
      *
-     * @param string $setting
+     * @param string $key
      * @param mixed  $value
      *
      * @return bool
      */
-    protected function validateSetting(string $setting, $value): bool
+    protected function validateSetting(string $key, $value): bool
     {
-        if (isset($this->rules[$setting])) {
-            $method = $this->rules[$setting];
+        $setting = $this->settings[$key] ?? null;
+
+        if ($setting) {
+            $method = $setting['rule'] ?? null;
 
             if ($method == 'is_bool') {
                 return $method((bool)$value);

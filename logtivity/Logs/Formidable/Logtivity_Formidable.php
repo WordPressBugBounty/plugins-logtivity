@@ -53,7 +53,7 @@ class Logtivity_Formidable
 				'format' => 'array',
 			]);
 
-			$log = Logtivity_Logger::log()
+			$log = Logtivity::log()
 				->setAction('Form Submitted')
 				->setContext($entry->form_name)
 				->addMeta('Form ID', $form_id)
@@ -66,7 +66,7 @@ class Logtivity_Formidable
 							return;
 						}
 						$entry = FrmProEntriesController::show_entry_shortcode( array( 'id' => $entry_id, 'format' => 'array' ) );
-						
+
 						$seenSubFields = [];
 
 						foreach ($entry as $key => $value) {
@@ -93,15 +93,15 @@ class Logtivity_Formidable
 
 							if (
 								$this->shouldStoreField(
-									$field_value->get_field_type(), 
+									$field_value->get_field_type(),
 									$field_value->get_field_key(),
 									$field_value->get_displayed_value()
 								)
 							) {
 								$log->addMeta(
-									$field_value->get_field_label(), 
+									$field_value->get_field_label(),
 									$this->maybeLogFormValue(
-										$field_value->get_field_type(), 
+										$field_value->get_field_type(),
 										$field_value->get_displayed_value()
 									)
 								);
@@ -109,12 +109,12 @@ class Logtivity_Formidable
 						}
 					}
 
-				} catch (\Exception $e) {
-				
+				} catch (Throwable $e) {
+                    // Ignore
 			}
 
 			$log->send();
-		} catch (\Exception $e) {
+		} catch (Throwable $e) {
 			error_log($e);
 		}
 	}

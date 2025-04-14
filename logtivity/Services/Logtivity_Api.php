@@ -27,34 +27,55 @@ class Logtivity_Api
     /**
      * Option class to access the plugin settings
      *
-     * @var object
+     * @var Logtivity_Options
      */
     protected Logtivity_Options $options;
 
     /**
-     * Should we wait to return the response from the API?
+     * We generally don't want to wait for a response from the API.
      *
      * @var bool
      */
-    public bool $waitForResponse = true;
+    protected bool $waitForResponse = false;
 
     /**
-     * Definitely don't wait for a response.
+     * If the currrent status is not 'fail' or 'success'
+     * attempt to send anyway
      *
      * @var bool
      */
-    public bool $asyncOverride = false;
+    protected bool $ignoreStatus = false;
 
     /**
      * The API key for either the site or team
      *
      * @var string
      */
-    public string $api_key = '';
+    protected ?string $api_key = null;
 
     public function __construct()
     {
         $this->options = new Logtivity_Options();
+    }
+
+    /**
+     * @return $this
+     */
+    public function waitForResponse(): self
+    {
+        $this->waitForResponse = true;
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    public function ignoreStatus(): self
+    {
+        $this->ignoreStatus = true;
+
+        return $this;
     }
 
     /**
@@ -67,14 +88,38 @@ class Logtivity_Api
         return logtivity_get_api_url() . $endpoint;
     }
 
-    public function post(string $url, array $body)
+    /**
+     * @param string $url
+     * @param array  $body
+     *
+     * @return ?array
+     */
+    public function post(string $url, array $body): ?array
     {
         return $this->makeRequest($url, $body);
     }
 
-    public function get($url, $body)
+    /**
+     * @param string $url
+     * @param ?array $body
+     *
+     * @return ?array
+     */
+    public function get(string $url, ?array $body = null): ?array
     {
-        return $this->makeRequest($url, $body, 'GET');
+        return $this->waitForResponse()->makeRequest($url, $body, 'GET');
+    }
+
+    /**
+     * @return ?string
+     */
+    public function getApiKey(): ?string
+    {
+        if ($this->api_key == false) {
+            $this->api_key = $this->options->getApiKey();
+        }
+
+        return $this->api_key;
     }
 
     /**
@@ -90,56 +135,61 @@ class Logtivity_Api
     }
 
     /**
-     * @return $this
-     */
-    public function async(): self
-    {
-        $this->asyncOverride = true;
-
-        return $this;
-    }
-
-    /**
      * Make a request to the Logtivity API
      *
      * @param string $url
-     * @param array  $body
+     * @param ?array $body
      * @param string $method
      *
-     * @return mixed $response
+     * @return ?array
      */
-    public function makeRequest(string $url, array $body, string $method = 'POST'): ?string
+    public function makeRequest(string $url, ?array $body = null, string $method = 'POST'): ?array
     {
-        $this->api_key = $this->api_key ?: logtivity_get_api_key();
         if ($this->options->urlHash() == false) {
             $this->options->update(['logtivity_url_hash' => md5(home_url())], false);
         }
 
-        if ($this->api_key && logtivity_has_site_url_changed() == false) {
-            $shouldLogLatestResponse = $this->asyncOverride == false
-                && ($this->waitForResponse || $this->options->shouldLogLatestResponse());
+        if ($this->ready()) {
+            if ($this->options->getOption('logtivity_app_verify_url')) {
+                $body = array_merge(
+                    $body ?: [],
+                    [
+                        'site_hash' => $this->options->urlHash(),
+                    ]
+                );
+            }
 
-            $response = wp_remote_post($this->getEndpoint($url), [
+            $waitForResponse = $this->waitForResponse || $this->options->shouldLogLatestResponse();
+
+            $response = wp_remote_request($this->getEndpoint($url), [
                 'method'      => $method,
-                'timeout'     => ($shouldLogLatestResponse ? 6 : 0.01),
-                'blocking'    => $shouldLogLatestResponse,
+                'timeout'     => ($waitForResponse ? 6 : 0.01),
+                'blocking'    => $waitForResponse,
                 'redirection' => 5,
                 'httpversion' => '1.0',
                 'headers'     => [
-                    'Authorization' => 'Bearer ' . $this->api_key,
+                    'Authorization' => 'Bearer ' . $this->getApiKey(),
                 ],
                 'body'        => $body,
                 'cookies'     => [],
             ]);
 
-            $response = wp_remote_retrieve_body($response);
+            if (wp_remote_retrieve_response_code($response) < 400) {
+                $responseBody = json_decode(wp_remote_retrieve_body($response), true);
 
-            if ($response) {
-                if ($shouldLogLatestResponse && $this->notUpdatingWidgetInCustomizer() && $method === 'POST') {
+                $currentStatus = $this->options->getOption('logtivity_api_key_check');
+                $newStatus     = empty($responseBody['error']) ? 'success' : 'paused';
+                if ($currentStatus != $newStatus) {
+                    $this->options->update(['logtivity_api_key_check' => $newStatus], false);
+                }
+
+                if ($waitForResponse && $this->notUpdatingWidgetInCustomizer() && $method == 'POST') {
                     $this->options->update([
                         'logtivity_latest_response' => [
-                            'date'     => date('Y-m-d H:i:s'),
-                            'response' => print_r($response, true),
+                            'date'    => date('Y-m-d H:i:s'),
+                            'code'    => wp_remote_retrieve_response_code($response),
+                            'message' => wp_remote_retrieve_response_message($response),
+                            'body'    => wp_remote_retrieve_body($response),
                         ],
                     ],
                         false
@@ -147,33 +197,96 @@ class Logtivity_Api
 
                     update_option('logtivity_last_settings_check_in_at', ['date' => date('Y-m-d H:i:s')]);
 
-                    $body = json_decode($response, true);
-
-                    $this->updateSettings($body);
+                    $this->updateSettings($responseBody);
                 }
+
+            } else {
+                // app responded with httpd error code
+                $this->options->update(['logtivity_api_key_check' => 'fail'], false);
             }
         }
 
-        return $response ?: null;
+        return $responseBody ?? null;
     }
 
-    public function updateSettings($body)
+    /**
+     * @param array|object $body
+     *
+     * @return void
+     */
+    public function updateSettings($body): void
     {
-        if (isset($body['settings'])) {
-            $this->options->update([
-                'logtivity_global_disabled_logs'         => $body['settings']['disabled_logs'] ?? null,
-                'logtivity_enable_white_label_mode'      => $body['settings']['enable_white_label_mode'] ?? null,
-                'logtivity_disabled_error_levels'        => $body['settings']['disabled_error_levels'] ?? null,
-                'logtivity_disable_error_logging'        => $body['settings']['disable_error_logging'] ?? null,
-                'logtivity_hide_plugin_from_ui'          => $body['settings']['hide_plugin_from_ui'] ?? null,
-                'logtivity_disable_default_logging'      => $body['settings']['disable_default_logging'] ?? null,
-                'logtivity_enable_options_table_logging' => $body['settings']['enable_options_table_logging'] ?? null,
-                'logtivity_enable_post_meta_logging'     => $body['settings']['enable_post_meta_logging'] ?? null,
-                'logtivity_custom_plugin_name'           => $body['settings']['custom_plugin_name'] ?? null,
-            ],
+        $settings = (object)($body->settings ?? $body['settings'] ?? null);
+
+        if ($settings) {
+            $this->options->update(
+                [
+                    'logtivity_global_disabled_logs'         => $settings->disabled_logs ?? null,
+                    'logtivity_enable_white_label_mode'      => $settings->enable_white_label_mode ?? null,
+                    'logtivity_disabled_error_levels'        => $settings->disabled_error_levels ?? null,
+                    'logtivity_disable_error_logging'        => $settings->disable_error_logging ?? null,
+                    'logtivity_hide_plugin_from_ui'          => $settings->hide_plugin_from_ui ?? null,
+                    'logtivity_disable_default_logging'      => $settings->disable_default_logging ?? null,
+                    'logtivity_enable_options_table_logging' => $settings->enable_options_table_logging ?? null,
+                    'logtivity_enable_post_meta_logging'     => $settings->enable_post_meta_logging ?? null,
+                    'logtivity_custom_plugin_name'           => $settings->custom_plugin_name ?? null,
+                ],
                 false
             );
         }
+    }
+
+    /**
+     * @return ?array
+     */
+    public function getLatestResponse(): ?array
+    {
+        $response = $this->options->getOption('logtivity_latest_response');
+
+        if ($response['body'] ?? null) {
+            $response['body'] = json_decode($response['body'] ?: '', true);
+        }
+
+        return $response;
+    }
+
+    /**
+     * @return ?string
+     */
+    public function getConnectionStatus(): ?string
+    {
+        $status = null;
+        $apiKey = $this->getApiKey();
+
+        if ($apiKey) {
+            $status = $this->options->getOption('logtivity_api_key_check');
+        }
+
+        return $status;
+    }
+
+    /**
+     * @return ?string
+     */
+    public function getConnectionMessage(): ?string
+    {
+        $status = $this->getConnectionStatus();
+
+        switch ($status) {
+            case 'paused':
+                $message = $this->getLatestResponse()['body']['error'] ?? null;
+                break;
+
+            case 'fail':
+                $message = 'Not connected. Please check API key';
+                break;
+
+            default:
+                $message = $this->getApiKey() ? 'Unknown error' : 'API Key has not been set';
+                break;
+        }
+
+        return $message ?? null;
     }
 
     /**
@@ -184,14 +297,19 @@ class Logtivity_Api
      */
     private function notUpdatingWidgetInCustomizer(): bool
     {
-        if (!isset($_POST['wp_customize'])) {
-            return true;
-        }
+        $customize = sanitize_text_field($_POST['wp_customize'] ?? null);
+        $action    = sanitize_text_field($_POST['action'] ?? null);
 
-        if (!isset($_POST['action'])) {
-            return true;
-        }
+        return ($action == 'update-widget' && $customize == 'on') == false;
+    }
 
-        return !($_POST['action'] === 'update-widget' && $_POST['wp_customize'] === 'on');
+    /**
+     * @return bool
+     */
+    private function ready(): bool
+    {
+        return ($this->getApiKey())
+            && logtivity_has_site_url_changed() == false
+            && ($this->ignoreStatus || $this->options->getOption('logtivity_api_key_check') == 'success');
     }
 }

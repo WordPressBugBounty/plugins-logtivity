@@ -60,25 +60,52 @@ echo logtivity_view('_admin-header', compact('options'));
                     </th>
 
                     <td>
+                        <?php
+                        $api            = new Logtivity_Api();
+                        $apiKey         = $api->getApiKey();
+                        $latestResponse = $api->getLatestResponse();
+                        $status         = $api->getConnectionStatus();
+                        ?>
                         <input id="logtivity_site_api_key"
                                name="logtivity_site_api_key"
                                type="text"
-                            <?php echo(has_filter('logtivity_site_api_key') ? 'readonly' : ''); ?>
-                               value="<?php echo sanitize_text_field($options['logtivity_site_api_key']); ?>"
+                            <?php echo has_filter('logtivity_site_api_key') ? 'readonly' : ''; ?>
+                               value="<?php echo sanitize_text_field($apiKey); ?>"
                                class="regular-text">
-                        <?php if ($options['logtivity_api_key_check']): ?>
-                            <p>
-                                Status:
-                                <?php
-                                echo(sanitize_text_field($options['logtivity_api_key_check']) != 'fail'
-                                    ? '<span style="color: #4caf50; font-weight: bold;">Connected</span>'
-                                    : '<span style="color: #ff3232; font-weight: bold;">Not connected. Please check API key.</span>'); ?>
-                            </p>
-                        <?php endif ?>
+                        <p>
+                            Status:
+                            <?php
+                            switch ($status) {
+                                case 'success':
+                                    echo '<span style="color: #4caf50; font-weight: bold;">Connected</span>';
+                                    break;
+
+                                case 'paused':
+                                    echo '<span style="color: #dbbf24; font-weight: bold;">Logging is paused</span>';
+                                    echo '<br>' . $api->getConnectionMessage();
+                                    break;
+
+                                case 'fail':
+                                    echo '<span style="color: #ff3232; font-weight: bold;">Not connected. Please check API key.</span>';
+                                    break;
+
+                                default:
+                                    if ($apiKey) {
+                                        echo '<span style="color: #ffdd32; font-weight: bold;">Unknown error</span>';
+                                    } else {
+                                        echo '<span style="font-weight: bold;">Enter this site\'s API Key</span>';
+                                    }
+                                    break;
+                            }
+                            ?>
+                        </p>
                     </td>
 
-                    <td>
-                        <span class="description">You can find this value by logging into your account and navigating to/creating this site settings page.</span>
+                    <td style="vertical-align: top;">
+                        <span class="description">
+                            You can find this value by logging into your account
+                            and navigating to/creating this site settings page.
+                        </span>
                     </td>
                 </tr>
 
@@ -99,7 +126,7 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_should_store_user_id"
                                name="logtivity_should_store_user_id"
                                type="checkbox"
-                            <?php echo(absint($options['logtivity_should_store_user_id']) ? 'checked' : ''); ?>
+                            <?php echo($options['logtivity_should_store_user_id'] ? 'checked' : ''); ?>
                             <?php echo(has_filter('logtivity_should_store_user_id') ? 'readonly' : ''); ?>
                                value="1"
                                class="regular-checkbox">
@@ -130,8 +157,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_should_log_profile_link"
                                name="logtivity_should_log_profile_link"
                                type="checkbox"
-                            <?php echo(absint($options['logtivity_should_log_profile_link']) ? 'checked' : ''); ?>
-                            <?php echo(has_filter('logtivity_should_log_profile_link') ? 'readonly' : ''); ?>
+                            <?php echo $options['logtivity_should_log_profile_link'] ? 'checked' : ''; ?>
+                            <?php echo has_filter('logtivity_should_log_profile_link') ? 'readonly' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -161,8 +188,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_should_log_username"
                                name="logtivity_should_log_username"
                                type="checkbox"
-                            <?php echo(has_filter('logtivity_should_log_username') ? 'readonly' : ''); ?>
-                            <?php echo(absint($options['logtivity_should_log_username']) ? 'checked' : ''); ?>
+                            <?php echo has_filter('logtivity_should_log_username') ? 'readonly' : ''; ?>
+                            <?php echo $options['logtivity_should_log_username'] ? 'checked' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -192,8 +219,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_should_store_ip"
                                name="logtivity_should_store_ip"
                                type="checkbox"
-                            <?php echo(absint($options['logtivity_should_store_ip']) ? 'checked' : ''); ?>
-                            <?php echo(has_filter('logtivity_should_store_ip') ? 'readonly' : ''); ?>
+                            <?php echo $options['logtivity_should_store_ip'] ? 'checked' : ''; ?>
+                            <?php echo has_filter('logtivity_should_store_ip') ? 'readonly' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -202,6 +229,40 @@ echo logtivity_view('_admin-header', compact('options'));
                         <span class="description">
                             If you check this box, when logging an action,
                             we will include the users IP address in the logged action.
+                        </span>
+                    </td>
+                </tr>
+
+                <tr class="user-user-login-wrap">
+                    <th>
+                        <label for="logtivity_app_verify_url">
+                            Verify Site URL
+                        </label>
+                        <?php if (has_filter('logtivity_app_verify_url')): ?>
+                            <div class="logtivity-constant">This option has been set in code.</div>
+                        <?php endif ?>
+                    </th>
+
+                    <td>
+                        <input id="logtivity_app_verify_url"
+                               name="logtivity_app_verify_url"
+                               type="hidden"
+                               value="0">
+
+                        <input id="logtivity_app_verify_url"
+                               name="logtivity_app_verify_url"
+                               type="checkbox"
+                            <?php echo $options['logtivity_app_verify_url'] ? 'checked' : ''; ?>
+                            <?php echo has_filter('logtivity_app_verify_url') ? 'readonly' : ''; ?>
+                               value="1"
+                               class="regular-checkbox">
+                    </td>
+
+                    <td>
+                        <span class="description">
+                            When messages are sent to Logtivity, the site URL will be checked
+                            against the URL Logtivity has on file for this API key. If they do
+                            not match, logging will be paused.
                         </span>
                     </td>
                 </tr>
@@ -225,8 +286,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_enable_debug_mode"
                                name="logtivity_enable_debug_mode"
                                type="checkbox"
-                            <?php echo(absint($options['logtivity_enable_debug_mode']) ? 'checked' : ''); ?>
-                            <?php echo(has_filter('logtivity_enable_debug_mode') ? 'readonly' : ''); ?>
+                            <?php echo $options['logtivity_enable_debug_mode'] ? 'checked' : ''; ?>
+                            <?php echo has_filter('logtivity_enable_debug_mode') ? 'readonly' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -250,14 +311,14 @@ echo logtivity_view('_admin-header', compact('options'));
                         <?php endif ?>
                     </th>
                     <td>
-                            <textarea id="logtivity_disable_individual_logs"
-                                      name="logtivity_disable_individual_logs"
-                                      class="regular-checkbox"
-                                      style="width: 100%;"
-                                      <?php echo(has_filter('logtivity_disable_individual_logs') ? 'readonly' : ''); ?>
-                                      rows="10"
-                                      placeholder="User Logged In&#10;User Created && subscriber"
-                            ><?php echo esc_html($options['logtivity_disable_individual_logs']); ?></textarea>
+                        <textarea id="logtivity_disable_individual_logs"
+                                  name="logtivity_disable_individual_logs"
+                                  class="regular-checkbox"
+                                  style="width: 100%;"
+                                  <?php echo has_filter('logtivity_disable_individual_logs') ? 'readonly' : ''; ?>
+                                  rows="10"
+                                  placeholder="User Logged In&#10;User Created && subscriber"
+                        ><?php echo esc_html($options['logtivity_disable_individual_logs']); ?></textarea>
                     </td>
 
                     <td>
@@ -301,31 +362,43 @@ echo logtivity_view('_admin-header', compact('options'));
     </div>
 </div>
 
-<?php if (absint($options['logtivity_enable_debug_mode'])): ?>
+<?php if ($options['logtivity_enable_debug_mode']): ?>
 
     <div class="postbox">
         <div class="inside">
 
             <h3>Latest Response</h3>
 
-            <?php if ($latest_response = $options['logtivity_latest_response']): ?>
+            <?php
+            if ($latestResponse) :
+                $date = $latestResponse['date'] ?? null;
+                $code = $latestResponse['code'] ?? null;
+                $message = $latestResponse['message'] ?? null;
+                $body = $latestResponse['body'] ?? null;
 
-                <h4>Date: <?php echo sanitize_text_field($latest_response['date']); ?></h4>
+                if ($date) : ?>
+                    <h4>Date: <?php echo $date; ?></h4>
+                <?php
+                endif;
 
-                <?php if ($latest_response['response']): ?>
+                if ($code || $message) : ?>
+                    <h4>
+                        Response: <?php echo sprintf('%s - %s', $code ?: 'NA', $message ?: 'No Message'); ?>
+                    </h4>
+                <?php
+                endif;
+
+                if ($body) : ?>
                     <code style="display: block; padding: 20px; overflow-x: auto;">
-
-                        <?php echo sanitize_text_field($latest_response['response']); ?>
-
+                        <?php echo json_encode($body); ?>
                     </code>
-                <?php endif ?>
+                <?php
+                endif;
 
-            <?php else: ?>
-
+            else : ?>
                 <p>The latest logging response will appear here after an event has been logged.</p>
 
             <?php endif ?>
-
         </div>
     </div>
 
