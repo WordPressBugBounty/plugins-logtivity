@@ -30,6 +30,11 @@
  * @var array  $options
  */
 
+$api            = new Logtivity_Api();
+$apiKey         = $api->getApiKey();
+$latestResponse = $api->getLatestResponse();
+$status         = $api->getConnectionStatus();
+
 echo logtivity_view('_admin-header', compact('options'));
 ?>
 
@@ -60,12 +65,6 @@ echo logtivity_view('_admin-header', compact('options'));
                     </th>
 
                     <td>
-                        <?php
-                        $api            = new Logtivity_Api();
-                        $apiKey         = $api->getApiKey();
-                        $latestResponse = $api->getLatestResponse();
-                        $status         = $api->getConnectionStatus();
-                        ?>
                         <input id="logtivity_site_api_key"
                                name="logtivity_site_api_key"
                                type="text"
@@ -86,7 +85,7 @@ echo logtivity_view('_admin-header', compact('options'));
                                     break;
 
                                 case 'fail':
-                                    echo '<span style="color: #ff3232; font-weight: bold;">Not connected. Please check API key.</span>';
+                                    echo '<span style="color: #ff3232; font-weight: bold;">' . $api->getConnectionMessage() . '</span>';
                                     break;
 
                                 default:

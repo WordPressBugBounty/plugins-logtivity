@@ -30,9 +30,28 @@
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.11",
         "wp-coding-standards/wpcs": "^3.1",
-        "automattic/vipwpcs": "^3.0"
+        "automattic/vipwpcs": "^3.0",
+        "lucatume/wp-browser": "^4.4",
+        "codeception/module-asserts": "^3.0",
+        "codeception/module-phpbrowser": "^3.0",
+        "codeception/module-db": "^3.2",
+        "codeception/module-webdriver": "^4.0"
     },
     "scripts": {
-        "check:phpcs": "vendor/bin/phpcs --standard=WordPress-VIP-Go ./ --severity=6 --ignore=vendor || true"
+        "check:phpcs": "vendor/bin/phpcs --standard=WordPress-VIP-Go ./ --severity=6 --ignore=vendor || true",
+        "test:driver": "source tests/.env && $CHROMEDRIVER_BINARY --port=$CHROMEDRIVER_PORT",
+        "test:sync": "bash tests/Support/Scripts/syncplugin.sh ./",
+        "test:clean": "vendor/bin/codecept clean",
+        "test": [
+            "@test:sync",
+            "vendor/bin/codecept run $@"
+        ]
+    },
+    "scripts-descriptions": {
+        "check:phpcs": "Run PHP CodeSniffer",
+        "test:driver": "Start ChromeDriver",
+        "test:sync": "Sync the plugin in the test site",
+        "test:clean": "Clean the tests _output directory",
+        "test": "Run the tests, passing any arguments to Codeception and syncing the plugin in the test site"
     }
 }

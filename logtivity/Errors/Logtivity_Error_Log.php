@@ -47,14 +47,14 @@ class Logtivity_Error_Log
      * @param ?string $file
      * @param ?int    $line
      *
-     * @return bool
+     * @return mixed
      */
     public function errorHandler(
         int $code,
         string $message,
         ?string $file = null,
         ?int $line = null
-    ): bool {
+    ) {
         try {
             if (isset($_SERVER['HTTP_HOST'])) {
                 $stackTrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS & ~DEBUG_BACKTRACE_PROVIDE_OBJECT);

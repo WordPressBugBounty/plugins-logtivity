@@ -169,11 +169,13 @@ class Logtivity_Options
      */
     public function shouldCheckInWithApi(): bool
     {
-        $latestResponse = get_option('logtivity_last_settings_check_in_at');
-        $lastCheckin    = $latestResponse['date'] ?? null;
+        if ($this->getOption('logtivity_enable_debug_mode') == false) {
+            $lastCheckin = get_option('logtivity_last_settings_check_in_at');
+            $lastCheckin = $lastCheckin['date'] ?? null;
 
-        if ($lastCheckin) {
-            return time() - strtotime($lastCheckin) > 10 * MINUTE_IN_SECONDS;
+            if ($lastCheckin) {
+                return time() - strtotime($lastCheckin) > 10 * MINUTE_IN_SECONDS;
+            }
         }
 
         return true;
@@ -237,14 +239,14 @@ class Logtivity_Options
             }
         } else {
             foreach ($this->settings as $setting => $default) {
-                if (isset($_POST[$setting]) && $this->validateSetting($setting, $_POST[$setting])) {
+                if (array_key_exists($setting, $_POST) && $this->validateSetting($setting, $_POST[$setting])) {
                     update_option($setting, $_POST[$setting]);
                 }
             }
         }
 
         if ($checkApiKey) {
-            $this->checkApiKey($data['logtivity_site_api_key'] ?? $_POST['logtivity_site_api_key'] ?? false);
+            $this->checkApiKey($data['logtivity_site_api_key'] ?? $_POST['logtivity_site_api_key'] ?? null);
         }
     }
 

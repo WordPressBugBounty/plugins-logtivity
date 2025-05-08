@@ -127,11 +127,11 @@ class Logtivity_Logger extends Logtivity_Api
     }
 
     /**
-     * @param string $context
+     * @param ?string $context
      *
      * @return $this
      */
-    public function setContext(string $context): self
+    public function setContext(?string $context): self
     {
         $this->context = $context;
 
@@ -139,11 +139,11 @@ class Logtivity_Logger extends Logtivity_Api
     }
 
     /**
-     * @param string $postType
+     * @param ?string $postType
      *
      * @return $this
      */
-    public function setPostType(string $postType): self
+    public function setPostType(?string $postType): self
     {
         $this->post_type = $postType;
 

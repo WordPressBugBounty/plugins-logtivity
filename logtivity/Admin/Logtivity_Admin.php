@@ -162,7 +162,7 @@ class Logtivity_Admin
      */
     public function update(): void
     {
-        if (!wp_verify_nonce($_POST['logtivity_update_settings'], 'logtivity_update_settings')) {
+        if (!wp_verify_nonce($_POST['logtivity_update_settings'] ?? null, 'logtivity_update_settings')) {
             wp_safe_redirect($this->settingsPageUrl());
             exit;
         }

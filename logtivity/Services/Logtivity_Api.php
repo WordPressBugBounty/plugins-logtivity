@@ -49,7 +49,7 @@ class Logtivity_Api
     /**
      * The API key for either the site or team
      *
-     * @var string
+     * @var ?string
      */
     protected ?string $api_key = null;
 
@@ -161,7 +161,7 @@ class Logtivity_Api
 
             $waitForResponse = $this->waitForResponse || $this->options->shouldLogLatestResponse();
 
-            $response = wp_remote_request($this->getEndpoint($url), [
+            $request = [
                 'method'      => $method,
                 'timeout'     => ($waitForResponse ? 6 : 0.01),
                 'blocking'    => $waitForResponse,
@@ -172,41 +172,63 @@ class Logtivity_Api
                 ],
                 'body'        => $body,
                 'cookies'     => [],
-            ]);
+            ];
 
-            if (wp_remote_retrieve_response_code($response) < 400) {
-                $responseBody = json_decode(wp_remote_retrieve_body($response), true);
+            $response = wp_remote_request($this->getEndpoint($url), $request);
+            if ($this->notUpdatingWidgetInCustomizer()) {
+                // We waited and received a response
+                if ($response instanceof WP_Error) {
+                    $responseData = [
+                        'code'    => 500,
+                        'message' => $response->get_error_code(),
+                        'error'   => $response->get_error_message() ?: $response->get_error_code(),
+                        'body'    => get_object_vars($response),
+                    ];
 
-                $currentStatus = $this->options->getOption('logtivity_api_key_check');
-                $newStatus     = empty($responseBody['error']) ? 'success' : 'paused';
-                if ($currentStatus != $newStatus) {
-                    $this->options->update(['logtivity_api_key_check' => $newStatus], false);
+                } else {
+                    $responseCode    = wp_remote_retrieve_response_code($response);
+                    $responseMessage = wp_remote_retrieve_response_message($response);
+                    $responseBody    = json_decode(wp_remote_retrieve_body($response), true);
+                    $responseError   = $responseCode < 400
+                        ? ($responseBody['error'] ?? null)
+                        : ($responseMessage ?: 'Unknown error');
+
+                    $responseData = [
+                        'code'    => $responseCode,
+                        'message' => $responseMessage,
+                        'error'   => $responseError,
+                        'body'    => $responseBody,
+                    ];
                 }
 
-                if ($waitForResponse && $this->notUpdatingWidgetInCustomizer() && $method == 'POST') {
+                if ($responseData['code']) {
+                    if ($responseData['code'] < 400) {
+                        // Successful request, check if api is telling us to pause
+                        $newStatus = $responseData['error'] ? 'paused' : 'success';
+                        $this->updateSettings($response['body']);
+
+                    } else {
+                        // Something went wrong submitting the api request
+                        $newStatus = 'fail';
+                        update_option('logtivity_last_settings_check_in_at', ['date' => date('Y-m-d H:i:s')]);
+                    }
+
                     $this->options->update([
-                        'logtivity_latest_response' => [
-                            'date'    => date('Y-m-d H:i:s'),
-                            'code'    => wp_remote_retrieve_response_code($response),
-                            'message' => wp_remote_retrieve_response_message($response),
-                            'body'    => wp_remote_retrieve_body($response),
-                        ],
+                        'logtivity_api_key_check'   => $newStatus,
+                        'logtivity_latest_response' => array_merge(
+                            ['date' => date('Y-m-d H:i:s')],
+                            $responseData
+                        ),
                     ],
                         false
                     );
 
-                    update_option('logtivity_last_settings_check_in_at', ['date' => date('Y-m-d H:i:s')]);
-
-                    $this->updateSettings($responseBody);
+                    return $responseData['body'];
                 }
-
-            } else {
-                // app responded with httpd error code
-                $this->options->update(['logtivity_api_key_check' => 'fail'], false);
             }
         }
 
-        return $responseBody ?? null;
+        return null;
     }
 
     /**
@@ -233,6 +255,8 @@ class Logtivity_Api
                 ],
                 false
             );
+
+            update_option('logtivity_last_settings_check_in_at', ['date' => date('Y-m-d H:i:s')]);
         }
     }
 
@@ -243,11 +267,7 @@ class Logtivity_Api
     {
         $response = $this->options->getOption('logtivity_latest_response');
 
-        if ($response['body'] ?? null) {
-            $response['body'] = json_decode($response['body'] ?: '', true);
-        }
-
-        return $response;
+        return $response ?: null;
     }
 
     /**
@@ -273,12 +293,25 @@ class Logtivity_Api
         $status = $this->getConnectionStatus();
 
         switch ($status) {
+            case 'success':
+                $message = 'Connected';
+                break;
+
             case 'paused':
                 $message = $this->getLatestResponse()['body']['error'] ?? null;
                 break;
 
             case 'fail':
-                $message = 'Not connected. Please check API key';
+                $error   = $this->getLatestResponse();
+                $code    = $error['code'] ?? null;
+                $message = $error['message'] ?? null;
+
+                if ($code && $message) {
+                    $message = sprintf('Disconnected (%s - %s)', $code, $message);
+                } else {
+                    $message = 'Not connected. Please check API key';
+                }
+
                 break;
 
             default:
@@ -286,7 +319,7 @@ class Logtivity_Api
                 break;
         }
 
-        return $message ?? null;
+        return $message;
     }
 
     /**
@@ -308,8 +341,13 @@ class Logtivity_Api
      */
     private function ready(): bool
     {
+        //var_dump($this->ignoreStatus);
         return ($this->getApiKey())
             && logtivity_has_site_url_changed() == false
-            && ($this->ignoreStatus || $this->options->getOption('logtivity_api_key_check') == 'success');
+            && (
+                $this->ignoreStatus
+                || $this->options->getOption('logtivity_api_key_check') == 'success'
+                || $this->options->shouldCheckInWithApi()
+            );
     }
 }

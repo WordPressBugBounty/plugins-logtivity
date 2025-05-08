@@ -28,60 +28,46 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
      * @var string[]
      */
     protected array $ignoredOptions = [
-        'cron',
+        '_edd_table_check',
+        '_wp_suggested_policy_text_has_changed',
         'action_scheduler_lock_async-request-runner',
-        'wp_all_export_pro_addons_not_included',
-        'logtivity_latest_response',
-        'logtivity_api_key_check',
-        'logtivity_url_hash',
-        'logtivity_global_disabled_logs',
-        'logtivity_enable_white_label_mode',
-        'logtivity_disabled_error_levels',
-        'logtivity_disable_error_logging',
-        'logtivity_hide_plugin_from_ui',
-        'logtivity_custom_plugin_name',
-        'logtivity_disable_default_logging',
-        'logtivity_site_api_key',
-        'logtivity_last_settings_check_in_at',
-        'logtivity_enable_options_table_logging',
-        'logtivity_enable_post_meta_logging',
-        'recently_activated',
         'active_plugins',
-        'jp_sync_last_success_sync',
-        'jp_sync_retry_after_sync',
-        'postman_state',
-        'jetpack_sync_settings_dedicated_sync_enabled',
-        'jetpack_plugin_api_action_links',
-        'jetpack_protect_blocked_attempts',
-        'stats_cache',
         'admin_email_lifespan',
+        'adminhash',
+        'akismet_spam_count',
+        'allowedthemes',
+        'auto_plugin_theme_update_emails',
+        'cron',
         'db_upgraded',
         'delete_blog_hash',
-        'adminhash',
-        'auto_plugin_theme_update_emails',
-        '_wp_suggested_policy_text_has_changed',
-        'ftp_credentials',
-        'uninstall_plugins',
-        'wp_force_deactivated_plugins',
         'fresh_site',
-        'allowedthemes',
-        'rxpp_blocked_methods_count',
-        'wordfence_syncAttackDataAttempts',
-        'akismet_spam_count',
-        'jetpack_next_sync_time_sync',
-        'jetpack_updates_sync_checksum',
-        'wpcf7',
+        'ftp_credentials',
         'gmt_offset',
-        '_edd_table_check',
-        'woocommerce_marketplace_suggestions',
-        'recently_edited',
-        'rewrite_rules',
+        'jetpack_next_sync_time_sync',
+        'jetpack_plugin_api_action_links',
+        'jetpack_protect_blocked_attempts',
+        'jetpack_sync_settings_dedicated_sync_enabled',
+        'jetpack_updates_sync_checksum',
+        'jp_sync_last_success_sync',
+        'jp_sync_retry_after_sync',
         'limit_login_retries',
-        'post_views_count',
-        'mepr_rules_db_cleanup_last_run',
-        'mepr_products_db_cleanup_last_run',
         'mepr_coupons_expire_last_run',
         'mepr_groups_db_cleanup_last_run',
+        'mepr_products_db_cleanup_last_run',
+        'mepr_rules_db_cleanup_last_run',
+        'post_views_count',
+        'postman_state',
+        'recently_activated',
+        'recently_edited',
+        'rewrite_rules',
+        'rxpp_blocked_methods_count',
+        'stats_cache',
+        'uninstall_plugins',
+        'woocommerce_marketplace_suggestions',
+        'wordfence_syncAttackDataAttempts',
+        'wp_all_export_pro_addons_not_included',
+        'wp_force_deactivated_plugins',
+        'wpcf7',
         'ws_form_css',
     ];
 
@@ -89,17 +75,30 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
      * @var string[]
      */
     protected array $ignoredWildcardOptions = [
-        'transient',
-        'cache',
         'auto_updater',
-        'wpe',
+        'cache',
+        'cron',
         'edd_api',
         'edd_sl',
         'frm_',
-        'queue',
-        'cron',
-        'sync',
         'last_run',
+        'logtivity_api',
+        'logtivity_app',
+        'logtivity_custom_plugin_name',
+        'logtivity_disable',
+        'logtivity_enable',
+        'logtivity_global',
+        'logtivity_hide_plugin_from_ui',
+        'logtivity_last_settings_check_in_at',
+        'logtivity_latest_response',
+        'logtivity_should',
+        'logtivity_site_api_key',
+        'logtivity_url_hash',
+        'logtivity_version',
+        'queue',
+        'sync',
+        'transient',
+        'wpe',
     ];
 
     /**
@@ -141,12 +140,12 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
     }
 
     /**
-     * @param int   $menuId
-     * @param array $menuData
+     * @param int    $menuId
+     * @param ?array $menuData
      *
      * @return void
      */
-    public function menuUpdated(int $menuId, array $menuData): void
+    public function menuUpdated(int $menuId, ?array $menuData = null): void
     {
         $menuName = $menuData['menu-name'] ?? null;
 

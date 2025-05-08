@@ -44,20 +44,17 @@ class Logtivity_Check_For_New_Settings
      */
     public function checkForNewSettings(): void
     {
-        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        global $wp_version;
 
-        update_option('logtivity_last_settings_check_in_at', ['date' => date('Y-m-d H:i:s')]);
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        if (!function_exists('get_core_updates')) {
+            require_once ABSPATH . 'wp-admin/includes/update.php';
+        }
 
         try {
             $api = new Logtivity_Api();
 
             $theme = wp_get_theme();
-
-            global $wp_version;
-
-            if (!function_exists('get_core_updates')) {
-                require_once ABSPATH . 'wp-admin/includes/update.php';
-            }
 
             $coreUpdates = get_core_updates();
 
@@ -65,7 +62,7 @@ class Logtivity_Check_For_New_Settings
             $latestMinPhpVersion   = $coreUpdates[0]->php_version ?? null;
             $latestMinMySqlVersion = $coreUpdates[0]->mysql_version ?? null;
 
-            $response = $api->post('/settings-check', [
+            $response = $api->ignoreStatus()->post('/settings-check', [
                 'php_version'                 => phpversion(),
                 'plugins'                     => $this->getPluginsWithStatuses(),
                 'theme_name'                  => $theme ? $theme->name : null,
@@ -180,13 +177,7 @@ class Logtivity_Check_For_New_Settings
      */
     public function shouldCheckInWithApi(): bool
     {
-        $latestReponse = get_option('logtivity_last_settings_check_in_at');
-
-        if (is_array($latestReponse) && isset($latestReponse['date'])) {
-            return time() - strtotime($latestReponse['date']) > 60 * MINUTE_IN_SECONDS; // 60 minutes
-        }
-
-        return true;
+        return (new Logtivity_Options())->shouldCheckInWithApi();
     }
 }
 

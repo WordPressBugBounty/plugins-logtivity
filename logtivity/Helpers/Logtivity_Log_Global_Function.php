@@ -32,7 +32,7 @@
  * @return ?mixed
  * @deprecated v3.1.8 - use Logtivity::log() instead
  */
-function logtivity_log(string $action = null, string $meta = null, string $user_id = null)
+function logtivity_log(?string $action = null, ?string $meta = null, ?string $user_id = null)
 {
     return Logtivity::log($action, $meta, $user_id)->send();
 }
