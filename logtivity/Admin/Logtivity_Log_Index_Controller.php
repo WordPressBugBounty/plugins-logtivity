@@ -54,6 +54,9 @@ class Logtivity_Log_Index_Controller
             if ($response) {
                 $this->successResponse(json_decode(json_encode($response)));
 
+            } elseif ((new Logtivity_Options())->getApiKey() == false) {
+                $this->welcomeResponse();
+
             } else {
                 $this->errorResponse((new Logtivity_Api())->getConnectionMessage());
             }
@@ -94,13 +97,26 @@ class Logtivity_Log_Index_Controller
     }
 
     /**
+     * @return void
+     */
+    private function welcomeResponse()
+    {
+        wp_send_json([
+            'view' => logtivity_view('activation', [
+                'display' => true,
+                'logo'    => false,
+            ]),
+        ]);
+    }
+
+    /**
      * @param string $field
      *
      * @return ?string
      */
     private function getInput(string $field): ?string
     {
-        return (isset($_GET[$field]) && is_string($_GET[$field]) ? $_GET[$field] : null);
+        return sanitize_text_field($_GET[$field] ?? null);
     }
 }
 

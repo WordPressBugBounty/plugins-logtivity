@@ -93,6 +93,80 @@ body[class*="_page_lgtvy-logs"] .button-primary:hover {
   color: #fff;
 }
 
+body[class*="_page_logtivity"] #postbox-container-1 h2,
+body[class*="_page_lgtvy-logs"] #postbox-container-1 h2 {
+  padding: 20px 20px 0;
+  font-size: 16px;
+}
+
+body[class*="_page_logtivity"] #postbox-container-1 .inside,
+body[class*="_page_lgtvy-logs"] #postbox-container-1 .inside {
+  padding: 0 20px 20px;
+}
+
+body[class*="_page_logtivity"] #postbox-container-1 .inside p,
+body[class*="_page_lgtvy-logs"] #postbox-container-1 .inside p,
+body[class*="_page_logtivity"] #postbox-container-1 .inside ul,
+body[class*="_page_lgtvy-logs"] #postbox-container-1 .inside ul {
+  font-size: 14px;
+}
+
+.logtivity-button,
+.logtivity-button:hover,
+.logtivity-button:focus,
+.logtivity-button:active {
+  padding: 8px 30px 8px 30px !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.logtivity-button-secondary,
+.logtivity-button-secondary:hover,
+.logtivity-button-secondary:focus,
+.logtivity-button-secondary:active {
+  background-color: #307bb9 !important;
+  border-color: #307bb9 !important;
+  color: #fff !important;
+}
+
+.logtivity-button-primary,
+.logtivity-button-primary:hover,
+.logtivity-button-primary:focus,
+.logtivity-button-primary:active {
+  background-color: #fcc948 !important;
+  border-color: #fcc948 !important;
+  color: #13314a !important;
+}
+
+.logtivity-button:hover,
+.logtivity-button:focus,
+.logtivity-button:active {
+  box-shadow: 0 15px 25px -7px rgba(0,0,0,0.1) !important;
+}
+
+.logtivity-notice {
+  padding: 0 !important;
+}
+
+.logtivity-notice > div {
+  padding: 20px;
+}
+
+.logtivity-notice > div > div > :first-child {
+  margin-top: 0;
+}
+
+.logtivity-notice > div > div > :last-child {
+  margin-bottom: 0;
+}
+
+.logtivity-notice p,
+.logtivity-notice ol {
+  font-size: 14px;
+  line-height: 1.2 !important;
+}
+
 .logtivity-settings {
   padding-right: 20px;
 }

@@ -22,64 +22,90 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @var string $fileName
+ * @var array $vars
+ * @var array $options
+ */
+
+$whiteLabel = ($options['logtivity_enable_white_label_mode'] ?? '0') == '1';
+if ($whiteLabel) :
+    return;
+endif;
+
+$isWelcome = !($options['logtivity_site_api_key'] ?? false);
 ?>
 <!-- sidebar -->
-
-<?php if (isset($options['logtivity_enable_white_label_mode']) && $options['logtivity_enable_white_label_mode'] == '1'):
-    return; ?>
-
-<?php endif ?>
 <div id="postbox-container-1" class="postbox-container">
     <div class="postbox">
-
-        <?php if ($options['logtivity_api_key_check'] !== 'success'): ?>
+        <?php
+        if ($isWelcome) : ?>
             <h2><span><?php esc_attr_e('Welcome to Logtivity', 'logtivity'); ?></span></h2>
-        <?php else: ?>
+        <?php else : ?>
             <h2><span><?php esc_attr_e('Logtivity', 'logtivity'); ?></span></h2>
         <?php endif; ?>
 
         <div class="inside">
-            <?php if ($options['logtivity_api_key_check'] !== 'success'): ?>
+            <?php
+            if ($isWelcome) : ?>
                 <p>
-                    Logtivity is a hosted SaaS service that provides dedicated activity monitoring for your WordPress
-                    site. This offers a strong alternative to using a plugin, because you don’t need to store huge
-                    amounts of data on your own server.</p>
-                <p>
-                    Simply connect this plugin to your Logtivity account and see the logs start coming in.
+                    <?php
+                    esc_html_e(
+                        "Logtivity is a hosted service that provides activity logs for your WordPress site. 
+                        This is better than using an activity log plugin because you don’t need to store huge amounts of data on your own server.",
+                        'logtivity'
+                    );
+                    ?>
                 </p>
                 <p>
-                    You can send alert notifications for any action on your site. For example, you can get a Slack
-                    notification for all Administrator logins.
+                    <?php
+                    esc_html_e(
+                        "Logtivity's dashboard gives you one place to monitor changes and activity across all your WordPress sites.",
+                        'logtivity'
+                    );
+                    ?>
                 </p>
                 <p>
-                    You can also create beautiful charts, allowing you to visualise the actions made on your site with
-                    ease.
+                    <?php
+                    esc_html_e(
+                        'You can send alert notifications for any action on your site. 
+                        For example, you can get a Slack notification for all Administrator logins.',
+                        'logtivity'
+                    );
+                    ?>
                 </p>
                 <p>
-                    <a href="<?php echo logtivity_get_app_url() . '/register'; ?>"
-                       class="button-primary"
-                       target="_blank">
-                        <?php esc_attr_e('Set up your Logtivity account', 'logtivity'); ?>
+                    <?php
+                    esc_html_e(
+                        'You can also create beautiful charts, allowing you to visualise the actions made on your site with ease.',
+                        'logtivity'
+                    );
+                    ?>
+                </p>
+                <p>
+                    <a class="button-primary logtivity-button logtivity-button-primary"
+                       target="_blank"
+                       href="<?php echo logtivity_get_app_url() . '/register'; ?>">
+                        <?php esc_attr_e('Start your free 10 day trial', 'logtivity'); ?>
                     </a>
                 </p>
             <?php endif ?>
-            <p>
-                <a href="<?php echo logtivity_get_app_url(); ?>"
-                   target="_blank"
-                >
-                    <?php esc_attr_e('Logtivity Dashboard', 'logtivity'); ?>
-                </a>
-            </p>
-            <p>
-                <a target="_blank" href="https://logtivity.io/docs"><?php esc_attr_e(
-                        'View our documentation here',
-                        'logtivity'
-                    ); ?></a>
-            </p>
-
+            <ul>
+                <li>
+                    <a target="_blank"
+                       href="<?php echo logtivity_get_app_url(); ?>">
+                        <?php esc_html_e('Logtivity Dashboard', 'logtivity'); ?>
+                    </a>
+                </li>
+                <li>
+                    <a target="_blank"
+                       href="https://logtivity.io/docs">
+                        <?php esc_html_e('View our documentation here', 'logtivity'); ?>
+                    </a>
+                </li>
+            </ul>
         </div>
         <!-- .inside -->
-
     </div>
     <!-- .postbox -->
 </div>

@@ -4,14 +4,11 @@
  * Plugin Name:       Logtivity
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
- * Version:           3.1.10
  * Author:            Logtivity
+ * Version:           3.1.11
  * Text Domain:       logtivity
  * Requires at least: 4.7
- * Tested up to:      6.7
- * Stable tag:        3.1.10
  * Requires PHP:      7.4
- * License:           GPLv2 or later
  */
 
 /**
@@ -47,7 +44,7 @@ class Logtivity
     /**
      * @var string
      */
-    protected string $version = '3.1.10';
+    protected string $version = '3.1.11';
 
     /**
      * List all classes here with their file paths. Keep class names the same as filenames.
@@ -139,6 +136,7 @@ class Logtivity
         add_action('admin_notices', [$this, 'welcomeMessage']);
         add_action('admin_notices', [$this, 'checkForSiteUrlChange']);
         add_action('admin_enqueue_scripts', [$this, 'loadScripts']);
+        add_action('admin_init', [$this, 'redirect_on_activate']);
 
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), [$this, 'addSettingsLinkFromPluginsPage']);
 
@@ -310,6 +308,8 @@ class Logtivity
      */
     public function activated(): void
     {
+        add_option('logtivity_activate', true);
+
         static::checkCapabilities();
 
         if (apply_filters('logtivity_hide_settings_page', false)) {
@@ -317,6 +317,25 @@ class Logtivity
         }
 
         set_transient('logtivity-welcome-notice', true, 5);
+    }
+
+    /**
+     * Redirect to Settings page
+     *
+     * @return void
+     * @since 3.1.11
+     *
+     */
+    public function redirect_on_activate()
+    {
+        if (get_option('logtivity_activate')) {
+            delete_option('logtivity_activate');
+
+            if (!isset($_GET['activate-multi'])) {
+                wp_redirect(admin_url('admin.php?page=logtivity'));
+                exit;
+            }
+        }
     }
 
     /**

@@ -1,15 +1,15 @@
-=== Error Log Monitor, Activity Logs, User Activity Tracking from Logtivity ===
+=== Activity Logs, User Activity Tracking, Multisite Activity Log from Logtivity ===
 
 Contributors: logtivity, stevejburge
 Tags: activity log, error logs, event monitoring, user activity, error log, activity logs, logs, log data, site activities, site events
-Requires at least: 4.7
-Tested up to: 6.7.2
-Stable tag: 3.1.10
+Requires at least: 6.6
+Tested up to: 6.8
+Stable tag: 3.1.11
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Logtivity is the error log and activity log service for WordPress admins. Logtivity is a unified platform that tracks activity and errors across all your WordPress sites.
+Logtivity is the activity log service for WordPress admins. Logtivity is a unified activity log platform that tracks activity and errors across all your WordPress sites.
 
 == Description ==
 
@@ -18,16 +18,6 @@ Logtivity is the error log and activity log service for WordPress admins. Logtiv
 Logtivity is a unified platform that tracks activity and errors across all your WordPress sites. We record everything that happens, and then send you alerts for important events! You can install Logtivity’s plugin and then use our service to keep a close eye on everything that happens on your sites.
 
 If you work with clients, they never have to know that you’re using Logtivity. You can either show a white label version of the activity logs, or you can hide Logtivity entirely.
-
-### WordPress Error Logs ###
-
-Logtivity records all PHP errors on your sites, including Errors, Warnings, and Notices.
-
-You can see the errors, how often they occur, and when they last occurred. It doesn’t matter where your site is hosted. Our logs will record the errors and point you to the file that’s causing problems.
-
-We’ll notify you as soon as an error occurs, allowing you to jump on it as soon as possible rather than waiting for a user to report it.
-
-[Click here to see more about error logs](https://logtivity.io/features/error-logs/).
 
 ### WordPress Activity Logs ###
 
@@ -84,6 +74,16 @@ The image on this screen shows what you’ll see inside WordPress after installi
 All of the activity log data is visible and searchable in the WordPress admin area. And if you want more information on any specific log entry, you can click the “View” button next to each log.
 
 [Click here to see more about the WordPress integration](https://logtivity.io/features/easy-wordpress-integration/).
+
+### WordPress Error Logs ###
+
+Logtivity records all PHP errors on your sites, including Errors, Warnings, and Notices.
+
+You can see the errors, how often they occur, and when they last occurred. It doesn’t matter where your site is hosted. Our logs will record the errors and point you to the file that’s causing problems.
+
+We’ll notify you as soon as an error occurs, allowing you to jump on it as soon as possible rather than waiting for a user to report it.
+
+[Click here to see more about error logs](https://logtivity.io/features/error-logs/).
 
 ### Logtivity has a White Label Mode for Agencies ###
 
@@ -261,6 +261,14 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 * Log tivity, loggtivity, logg tivity (all incorrect)
 
 == Changelog ==
+
+= 3.1.11 =
+
+* Update: Improvements to welcome messaging
+* Update: Redirect on activate
+* Update: WordPress version compatibility
+
+_Release Date - Thursday, May 15, 2025_
 
 = 3.1.10 =
 
