@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.1.11
+ * Version:           3.1.12
  * Text Domain:       logtivity
  * Requires at least: 4.7
  * Requires PHP:      7.4
@@ -44,10 +44,12 @@ class Logtivity
     /**
      * @var string
      */
-    protected string $version = '3.1.11';
+    protected string $version = '3.1.12';
 
     /**
      * List all classes here with their file paths. Keep class names the same as filenames.
+     * Ordering of this list matters!
+     * @TODO: Implement pst-0 autoloading
      *
      * @var string[]
      */
@@ -58,6 +60,7 @@ class Logtivity
         'Admin/Logtivity_Log_Index_Controller',
         'Admin/Logtivity_Dismiss_Notice_Controller',
         'Admin/Logtivity_Options',
+        'Admin/Logtivity_Response',
         'Admin/Logtivity_Admin',
         'Services/Logtivity_User_Logger_Trait',
         'Services/Logtivity_Api',
@@ -207,6 +210,86 @@ class Logtivity
                 }
             }
         }
+    }
+
+    /**
+     * Main entry for registering a site using the team API Key
+     *
+     * @param ?string $teamApi
+     * @param ?string $teamName
+     * @param ?string $siteName
+     * @param ?string $url
+     *
+     * @return null|Logtivity_Response|WP_Error
+     */
+    public static function registerSite(
+        ?string $teamApi,
+        ?string $teamName = null,
+        ?string $siteName = null,
+        ?string $url = null
+    ) {
+        $logtivityOptions = new Logtivity_Options();
+
+        if ($logtivityOptions->getApiKey()) {
+            $response = new WP_Error(
+                'logtivity_register_site_error',
+                __('You have already entered an API Key for this site.', 'logtivity')
+            );
+
+        } elseif ($teamApi) {
+            $request = [
+                'method'   => 'POST',
+                'timeout'  => 6,
+                'blocking' => true,
+                'body'     => [
+                    'team_name' => $teamName,
+                    'name'      => $siteName ?: get_bloginfo('name'),
+                    'url'       => $url ?: home_url(),
+                ],
+                'cookies'  => [],
+            ];
+
+            $response = new Logtivity_Response($teamApi, '/sites', $request);
+            if ($response->code == 200 && $response->error == false) {
+                $apikey   = $response->body['api_key'] ?? null;
+                $teamName = $response->body['team_name'] ?? '*unknown*';
+                $created  = $response->body['created_at'] ?? null;
+                $isNew    = $response->body['is_new'] ?? null;
+
+                if ($apikey) {
+                    $logtivityOptions->update(['logtivity_site_api_key' => $apikey]);
+
+                    if ($isNew) {
+                        $response->message = sprintf(
+                            'This site has been created on <a href="%s" target="_blank">Logtivity</a> for team \'%s\'. Logging is now enabled.',
+                            logtivity_get_app_url(),
+                            $teamName
+                        );
+
+                    } else {
+                        if ($created) {
+                            $createdTimestamp = strtotime($created);
+                            $creationText = sprintf(
+                                'It was created on %s at %s ',
+                                wp_date(get_option('date_format'), $createdTimestamp),
+                                wp_date(get_option('time_format'), $createdTimestamp)
+                            );
+                        }
+                        $response->message = sprintf(
+                            'This site was found on <a href="%s" target="_blank">Logtivity</a>. %sfor the team \'%s\'. Logging is now enabled.',
+                            logtivity_get_app_url(),
+                            $creationText ?? '',
+                            $teamName
+                        );
+                    }
+                }
+            }
+
+        } else {
+            $response = new WP_Error('logtivity_missing_data', 'Team API Key is required.');
+        }
+
+        return $response ?? null;
     }
 
     /**

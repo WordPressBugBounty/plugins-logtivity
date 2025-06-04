@@ -47,7 +47,7 @@ class Logtivity_Api
     protected bool $ignoreStatus = false;
 
     /**
-     * The API key for either the site or team
+     * The API Key for either the site or team
      *
      * @var ?string
      */
@@ -174,6 +174,7 @@ class Logtivity_Api
                 'cookies'     => [],
             ];
 
+            // @TODO: Switch to Logtivity_Response class to get standardized responses
             $response = wp_remote_request($this->getEndpoint($url), $request);
             if ($this->notUpdatingWidgetInCustomizer()) {
                 // We waited and received a response
@@ -189,10 +190,14 @@ class Logtivity_Api
                     $responseCode    = wp_remote_retrieve_response_code($response);
                     $responseMessage = wp_remote_retrieve_response_message($response);
                     $responseBody    = json_decode(wp_remote_retrieve_body($response), true);
-                    $responseError   = $responseCode < 400
-                        ? ($responseBody['error'] ?? null)
-                        : ($responseMessage ?: 'Unknown error');
 
+                    if ($responseCode < 400) {
+                        $responseError = $responseBody['error'] ?? null;
+                    } else {
+                        $responseError   = $responseMessage;
+                        $responseMessage = (($responseBody['message'] ?? $responseMessage) ?: 'Unknown error');
+
+                    }
                     $responseData = [
                         'code'    => $responseCode,
                         'message' => $responseMessage,
@@ -309,7 +314,7 @@ class Logtivity_Api
                 if ($code && $message) {
                     $message = sprintf('Disconnected (%s - %s)', $code, $message);
                 } else {
-                    $message = 'Not connected. Please check API key';
+                    $message = 'Not connected. Please check API Key';
                 }
 
                 break;

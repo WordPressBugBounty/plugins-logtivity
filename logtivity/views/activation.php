@@ -28,7 +28,7 @@
                 <li>
                     <?php
                     echo sprintf(
-                        esc_html__('%sClick the "Add Site" button%s  and get your API key.', 'logtivity'),
+                        esc_html__('%sClick the "Add Site" button%s  and get your API Key.', 'logtivity'),
                         '<a target="_blank" href="https://logtivity.io/docs/connect-your-site-to-logtivity/">',
                         '</a>'
                     );
@@ -37,7 +37,7 @@
                 <li>
                     <?php
                     echo sprintf(
-                        esc_html__('Add your API key into %sthe "Settings" area%s on this site.', 'logtivity'),
+                        esc_html__('Add your API Key into %sthe "Settings" area%s on this site.', 'logtivity'),
                         '<a target="_blank" href="' . admin_url('admin.php?page=logtivity-settings') . '">',
                         '</a>'
                     );

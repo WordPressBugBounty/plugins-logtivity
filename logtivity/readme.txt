@@ -4,7 +4,7 @@ Contributors: logtivity, stevejburge
 Tags: activity log, error logs, event monitoring, user activity, error log, activity logs, logs, log data, site activities, site events
 Requires at least: 6.6
 Tested up to: 6.8
-Stable tag: 3.1.11
+Stable tag: 3.1.12
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -121,7 +121,7 @@ Activate Logtivity from your Plugins page.
 
 #### Once Activated
 Visit 'Tools > Logtivity' to view the settings page.
-Enter your Logtivity API key, configure your options and your event monitoring will start!
+Enter your Logtivity API Key, configure your options and your event monitoring will start!
 
 == Frequently Asked Questions ==
 
@@ -261,6 +261,13 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 * Log tivity, loggtivity, logg tivity (all incorrect)
 
 == Changelog ==
+
+= 3.1.12 =
+
+* New: Register Site with Team API
+* Update: Adjust screen styles and messaging
+
+_Release Date - Wednesday, June 4, 2025_
 
 = 3.1.11 =
 
@@ -603,7 +610,7 @@ _Release Date – Wednesday 4th August 2021_
 
 = 1.4.0 =
 * Removed deprecated async method from Logtivity_Logger class.
-* Added API key verification when updating Logtivity settings.
+* Added API Key verification when updating Logtivity settings.
 
 = 1.3.1 =
 * Fix user info not always being picked up on User login action.

@@ -39,16 +39,18 @@ echo logtivity_view('_admin-header', compact('options'));
 ?>
 
 <div class="postbox logtivity-settings">
-    <?php if (logtivity_has_site_url_changed()): ?>
-        <div style="background: #DC3232;color: #fff;padding: 1em">
-            <h2 style="color: white; padding-left: 0" class="title">We've detected a change in your site URL.</h2>
-            <p>Is this a dev or staging environment? As a precaution, we've stopped logging. To start recording
-                logs, again click the 'Update Settings' button below.</p>
-        </div>
-    <?php endif ?>
-
     <div class="inside">
         <h1 style="padding-top: 20px;">Settings</h1>
+
+        <?php if (logtivity_has_site_url_changed()): ?>
+            <div class="logtivity-notice logtivity-notice-danger">
+                <h2>We've detected a change in your site URL.</h2>
+                <div>
+                    Is this a dev or staging environment? As a precaution, we've stopped logging. To start recording
+                    logs, again click the 'Update Settings' button below.
+                </div>
+            </div>
+        <?php endif ?>
 
         <form action="<?php echo admin_url('admin-ajax.php'); ?>?action=logtivity_update_settings" method="post">
 
@@ -103,7 +105,7 @@ echo logtivity_view('_admin-header', compact('options'));
                     <td style="vertical-align: top;">
                         <span class="description">
                             You can find this value by logging into your account
-                            and navigating to/creating this site settings page.
+                            and navigating to this site's settings page.
                         </span>
                     </td>
                 </tr>
@@ -260,7 +262,7 @@ echo logtivity_view('_admin-header', compact('options'));
                     <td>
                         <span class="description">
                             When messages are sent to Logtivity, the site URL will be checked
-                            against the URL Logtivity has on file for this API key. If they do
+                            against the URL Logtivity has on file for this API Key. If they do
                             not match, logging will be paused.
                         </span>
                     </td>
@@ -337,10 +339,13 @@ echo logtivity_view('_admin-header', compact('options'));
                                     ?>
                                     If you have multiple sites on Logtivity and would rather control disabled
                                     logs globally you can go to the
-                                    <a href="<?php echo logtivity_get_app_url() . '/team-settings/activity-log-settings'; ?>"
-                                       target="_blank"
-                                       rel="nofollow"
-                                    >Activity Log Settings page</a>
+                                    <?php
+                                    echo sprintf(
+                                        '<a href="%s" target="_blank" rel="nofollow">%s</a>',
+                                        logtivity_get_app_url() . '/team-settings/activity-log-settings',
+                                        'Activity Log Settings page'
+                                    );
+                                    ?>
                                     in your Logtivity dashboard.
                                 <?php endif; ?>
 							</span>

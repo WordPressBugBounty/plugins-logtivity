@@ -45,6 +45,8 @@ class Logtivity_Admin
         add_action('wp_ajax_logtivity_update_settings', [$this, 'update']);
         add_action('wp_ajax_nopriv_logtivity_update_settings', [$this, 'update']);
 
+        add_action('wp_ajax_logtivity_register_site', [$this, 'registerSite']);
+
         add_filter('logtivity_hide_from_menu', [$this, 'shouldHidePluginFromUI']);
         add_filter('all_plugins', [$this, 'maybeHideFromMenu']);
 
@@ -97,9 +99,11 @@ class Logtivity_Admin
     }
 
     /**
-     * Register the settings page
+     * Create the admin menus
+     *
+     * @return void
      */
-    public function registerOptionsPage()
+    public function registerOptionsPage(): void
     {
         if (!apply_filters('logtivity_hide_from_menu', false)) {
             add_menu_page(
@@ -115,12 +119,23 @@ class Logtivity_Admin
 
         if (!apply_filters('logtivity_hide_settings_page', false)) {
             add_submenu_page(
-                ($this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity'),
+                $this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity',
                 'Logtivity Settings',
                 'Settings',
                 Logtivity::ACCESS_SETTINGS,
-                'logtivity' . '-settings',
-                [$this, 'showLogtivitySettingsPage']
+                'logtivity-settings',
+                [$this, 'showSettingsPage']
+            );
+        }
+
+        if ($this->options->getApiKey() == false) {
+            add_submenu_page(
+                $this->options->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity',
+                'Register Site',
+                'Register Site',
+                Logtivity::ACCESS_SETTINGS,
+                'logtivity-register-site',
+                [$this, 'showRegisterSitePage']
             );
         }
     }
@@ -130,7 +145,7 @@ class Logtivity_Admin
      *
      * @return void
      */
-    public function showLogIndexPage()
+    public function showLogIndexPage(): void
     {
         if (!current_user_can(Logtivity::ACCESS_LOGS)) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
@@ -146,7 +161,7 @@ class Logtivity_Admin
      *
      * @return void
      */
-    public function showLogtivitySettingsPage()
+    public function showSettingsPage(): void
     {
         if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
@@ -158,20 +173,36 @@ class Logtivity_Admin
     }
 
     /**
+     * Show the register by team API page
+     *
+     * @return void
+     */
+    public function showRegisterSitePage(): void
+    {
+        if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
+            wp_die(__('You do not have sufficient permissions to access this page.'));
+        }
+
+        $options = $this->options->getOptions();
+
+        echo logtivity_view('register', compact('options'));
+    }
+
+    /**
      * @return void
      */
     public function update(): void
     {
         if (!wp_verify_nonce($_POST['logtivity_update_settings'] ?? null, 'logtivity_update_settings')) {
             wp_safe_redirect($this->settingsPageUrl());
-            exit;
+            exit();
         }
 
         $user = new Logtivity_Wp_User();
 
         if (!$user->hasRole('administrator')) {
             wp_safe_redirect($this->settingsPageUrl());
-            exit;
+            exit();
         }
 
         $this->options->update(
@@ -188,7 +219,38 @@ class Logtivity_Admin
         (new Logtivity_Check_For_New_Settings())->checkForNewSettings();
 
         wp_safe_redirect($this->settingsPageUrl());
-        exit;
+        exit();
+    }
+
+    /**
+     * ajax endpoint for registering with a team API Key
+     *
+     * @return void
+     */
+    public function registerSite(): void
+    {
+        try {
+            if (wp_verify_nonce($_POST['logtivity_register_site'] ?? null, 'logtivity_register_site')) {
+                $teamApi  = sanitize_text_field($_POST['logtivity_team_api_key'] ?? null);
+
+                $response = Logtivity::registerSite($teamApi);
+
+
+                if ($response instanceof WP_Error) {
+                    wp_send_json_error($response);
+                } else {
+                    wp_send_json_success($response);
+                }
+
+            } else {
+                wp_send_json_error('Invalid Request');
+            }
+
+        } catch (Throwable $error) {
+            wp_send_json_error($error->getMessage(), $error->getCode());
+        }
+
+        wp_die();
     }
 
     /**

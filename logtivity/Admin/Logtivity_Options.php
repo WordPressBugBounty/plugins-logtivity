@@ -93,7 +93,7 @@ class Logtivity_Options
     }
 
     /**
-     * Get the API key for the site
+     * Get the API Key for the site
      *
      * @return string
      */
