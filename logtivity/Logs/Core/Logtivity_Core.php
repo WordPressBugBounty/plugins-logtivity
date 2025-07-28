@@ -196,7 +196,6 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
             Logtivity::log()
                 ->setAction('Settings Updated')
                 ->setContext('Core:' . $optionPage)
-                ->ignoreStatus()
                 ->send();
         }
     }

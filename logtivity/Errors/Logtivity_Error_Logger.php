@@ -69,7 +69,7 @@ class Logtivity_Error_Logger extends Logtivity_Api
     /**
      * @return ?array
      */
-    public function send(): ?array
+    public function send(): void
     {
         $message = $this->error['message'] ?? '';
         if (in_array($message, self::$recordedErrors) === false) {
@@ -78,11 +78,9 @@ class Logtivity_Error_Logger extends Logtivity_Api
             do_action('wp_logtivity_error_logger_instance', $this);
 
             if ($this->active) {
-                $response = $this->makeRequest('/errors/store', $this->getData());
+                $this->makeRequest('/errors/store', $this->getData());
             }
         }
-
-        return $response ?? null;
     }
 
     /**

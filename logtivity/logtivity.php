@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.1.12
+ * Version:           3.2.0
  * Text Domain:       logtivity
  * Requires at least: 4.7
  * Requires PHP:      7.4
@@ -44,12 +44,12 @@ class Logtivity
     /**
      * @var string
      */
-    protected string $version = '3.1.12';
+    protected string $version = '3.2.0';
 
     /**
      * List all classes here with their file paths. Keep class names the same as filenames.
      * Ordering of this list matters!
-     * @TODO: Implement pst-0 autoloading
+     * @TODO: Implement psr-0 autoloading
      *
      * @var string[]
      */
@@ -70,6 +70,7 @@ class Logtivity
         'Logs/Logtivity_Abstract_Logger',
         'Services/Logtivity_Check_For_Disabled_Individual_Logs',
         'Services/Logtivity_Check_For_New_Settings',
+        'Services/Logtivity_Rest_Endpoints',
         /**
          * Error logging
          */
@@ -78,7 +79,6 @@ class Logtivity
         'Errors/Logtivity_Error_Logger',
         'Errors/Logtivity_Error_Log',
     ];
-
     /**
      * @var string[]
      */
@@ -95,7 +95,6 @@ class Logtivity
         'Logs/Core/Logtivity_Term',
         'Logs/Core/Logtivity_Meta',
     ];
-
     /**
      * List all integration dependencies
      *
@@ -176,6 +175,54 @@ class Logtivity
     public function loadFile(string $filePath): void
     {
         require_once plugin_dir_path(__FILE__) . $filePath . '.php';
+    }
+
+    /**
+     * Review updates based on version
+     *
+     * @return void
+     */
+    public function updateCheck(): void
+    {
+        $currentVersion = get_option('logtivity_version');
+
+        if (version_compare($currentVersion, '3.1.6', '<=')) {
+            static::checkCapabilities();
+        }
+
+        if ($currentVersion && version_compare($currentVersion, '3.1.7', '<=')) {
+            // Default for updating sites should be no behavior change
+            update_option('logtivity_app_verify_url', 0);
+        }
+
+        update_option('logtivity_version', $this->version);
+    }
+
+    /**
+     * Custom capabilities added prior to v3.1.7
+     *
+     * @return void
+     */
+    public static function checkCapabilities(): void
+    {
+        $capabilities = array_filter(
+            array_keys(logtivity_get_capabilities()),
+            function (string $capability): bool {
+                return in_array($capability, [Logtivity::ACCESS_LOGS, Logtivity::ACCESS_SETTINGS]);
+            }
+        );
+
+        if ($capabilities == false) {
+            // Make sure at least admins can access us
+            if ($role = get_role('administrator')) {
+                if ($role->has_cap(Logtivity::ACCESS_LOGS) == false) {
+                    $role->add_cap(Logtivity::ACCESS_LOGS);
+                }
+                if ($role->has_cap(Logtivity::ACCESS_SETTINGS) == false) {
+                    $role->add_cap(Logtivity::ACCESS_SETTINGS);
+                }
+            }
+        }
     }
 
     /**
@@ -269,7 +316,7 @@ class Logtivity
                     } else {
                         if ($created) {
                             $createdTimestamp = strtotime($created);
-                            $creationText = sprintf(
+                            $creationText     = sprintf(
                                 'It was created on %s at %s ',
                                 wp_date(get_option('date_format'), $createdTimestamp),
                                 wp_date(get_option('time_format'), $createdTimestamp)
@@ -289,7 +336,7 @@ class Logtivity
             $response = new WP_Error('logtivity_missing_data', 'Team API Key is required.');
         }
 
-        return $response ?? null;
+        return $response;
     }
 
     /**
@@ -312,27 +359,6 @@ class Logtivity
     public static function logError(array $error): Logtivity_Error_Logger
     {
         return new Logtivity_Error_Logger($error);
-    }
-
-    /**
-     * Review updates based on version
-     *
-     * @return void
-     */
-    public function updateCheck(): void
-    {
-        $currentVersion = get_option('logtivity_version');
-
-        if (version_compare($currentVersion, '3.1.6', '<=')) {
-            static::checkCapabilities();
-        }
-
-        if ($currentVersion && version_compare($currentVersion, '3.1.7', '<=')) {
-            // Default for updating sites should be no behavior change
-            update_option('logtivity_app_verify_url', 0);
-        }
-
-        update_option('logtivity_version', $this->version);
     }
 
     /**
@@ -422,33 +448,6 @@ class Logtivity
     }
 
     /**
-     * Custom capabilities added prior to v3.1.7
-     *
-     * @return void
-     */
-    public static function checkCapabilities(): void
-    {
-        $capabilities = array_filter(
-            array_keys(logtivity_get_capabilities()),
-            function (string $capability): bool {
-                return in_array($capability, [Logtivity::ACCESS_LOGS, Logtivity::ACCESS_SETTINGS]);
-            }
-        );
-
-        if ($capabilities == false) {
-            // Make sure at least admins can access us
-            if ($role = get_role('administrator')) {
-                if ($role->has_cap(Logtivity::ACCESS_LOGS) == false) {
-                    $role->add_cap(Logtivity::ACCESS_LOGS);
-                }
-                if ($role->has_cap(Logtivity::ACCESS_SETTINGS) == false) {
-                    $role->add_cap(Logtivity::ACCESS_SETTINGS);
-                }
-            }
-        }
-    }
-
-    /**
      * @return void
      */
     public function welcomeMessage(): void
@@ -468,6 +467,7 @@ class Logtivity
         if (
             current_user_can(static::ACCESS_SETTINGS)
             && logtivity_has_site_url_changed()
+            && (new Logtivity_Options())->isWhiteLabelMode() == false
             && !get_transient('dismissed-logtivity-site-url-has-changed-notice')
         ) {
             echo logtivity_view('site-url-changed-notice');

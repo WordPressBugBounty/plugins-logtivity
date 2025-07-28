@@ -40,6 +40,14 @@ class Logtivity_Check_For_New_Settings
     }
 
     /**
+     * @return bool
+     */
+    public function shouldCheckInWithApi(): bool
+    {
+        return (new Logtivity_Options())->shouldCheckInWithApi();
+    }
+
+    /**
      * @return void
      */
     public function checkForNewSettings(): void
@@ -52,8 +60,6 @@ class Logtivity_Check_For_New_Settings
         }
 
         try {
-            $api = new Logtivity_Api();
-
             $theme = wp_get_theme();
 
             $coreUpdates = get_core_updates();
@@ -62,44 +68,32 @@ class Logtivity_Check_For_New_Settings
             $latestMinPhpVersion   = $coreUpdates[0]->php_version ?? null;
             $latestMinMySqlVersion = $coreUpdates[0]->mysql_version ?? null;
 
-            $response = $api->ignoreStatus()->post('/settings-check', [
-                'php_version'                 => phpversion(),
-                'plugins'                     => $this->getPluginsWithStatuses(),
-                'theme_name'                  => $theme ? $theme->name : null,
-                'theme_version'               => $theme ? $theme->version : null,
-                'themes'                      => $this->getThemesListWithStatuses(),
-                'wordpress_version'           => $wp_version,
-                'latest_wp_version'           => $latestWPVersion,
-                'latest_wp_min_php_version'   => $latestMinPhpVersion,
-                'latest_wp_min_mysql_version' => $latestMinMySqlVersion,
-            ]);
+            $api = new Logtivity_Api();
 
-            if ($response) {
-                $api->updateSettings($response);
+            $response = $api
+                ->ignoreStatus()
+                ->waitForResponse()
+                ->makeRequest(
+                    '/settings-check',
+                    [
+                        'php_version'                 => phpversion(),
+                        'plugins'                     => $this->getPluginsWithStatuses(),
+                        'theme_name'                  => $theme ? $theme->name : null,
+                        'theme_version'               => $theme ? $theme->version : null,
+                        'themes'                      => $this->getThemesListWithStatuses(),
+                        'wordpress_version'           => $wp_version,
+                        'latest_wp_version'           => $latestWPVersion,
+                        'latest_wp_min_php_version'   => $latestMinPhpVersion,
+                        'latest_wp_min_mysql_version' => $latestMinMySqlVersion,
+                    ]);
+
+            if ($settings = $response['body']['settings'] ?? null) {
+                $api->updateSettings($settings);
             }
 
         } catch (Throwable $error) {
             // Ignore
         }
-    }
-
-    /**
-     * @return array[]
-     */
-    private function getThemesListWithStatuses(): array
-    {
-        $themes = wp_get_themes();
-
-        $themesDetails = [];
-
-        foreach ($themes as $theme) {
-            $themesDetails[] = [
-                'name'    => $theme->name,
-                'version' => $theme->version,
-            ];
-        }
-
-        return $themesDetails;
     }
 
     /**
@@ -173,11 +167,22 @@ class Logtivity_Check_For_New_Settings
     }
 
     /**
-     * @return bool
+     * @return array[]
      */
-    public function shouldCheckInWithApi(): bool
+    private function getThemesListWithStatuses(): array
     {
-        return (new Logtivity_Options())->shouldCheckInWithApi();
+        $themes = wp_get_themes();
+
+        $themesDetails = [];
+
+        foreach ($themes as $theme) {
+            $themesDetails[] = [
+                'name'    => $theme->name,
+                'version' => $theme->version,
+            ];
+        }
+
+        return $themesDetails;
     }
 }
 

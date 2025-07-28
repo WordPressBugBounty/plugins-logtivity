@@ -40,73 +40,39 @@ class Logtivity_Log_Index_Controller
     public function search(): void
     {
         if (current_user_can(Logtivity::ACCESS_LOGS)) {
-            $response = (new Logtivity_Api())
-                ->get(
-                    '/logs',
-                    [
-                        'page'        => $this->getInput('page'),
-                        'action'      => $this->getInput('search_action'),
-                        'context'     => $this->getInput('search_context'),
-                        'action_user' => $this->getInput('action_user'),
-                    ]
-                );
+            $api = Logtivity::log();
 
-            if ($response) {
-                $this->successResponse(json_decode(json_encode($response)));
+            if ($api->getOption()->getApiKey()) {
+                $response = $api
+                    ->get(
+                        '/logs',
+                        [
+                            'page'        => $this->getInput('page'),
+                            'action'      => $this->getInput('search_action'),
+                            'context'     => $this->getInput('search_context'),
+                            'action_user' => $this->getInput('action_user'),
+                        ]
+                    );
 
-            } elseif ((new Logtivity_Options())->getApiKey() == false) {
-                $this->welcomeResponse();
+                if ($response) {
+                    $response = json_decode(json_encode($response));
+
+                    $this->renderView([
+                        'message'     => $response->error,
+                        'logs'        => $response->body->data ?? [],
+                        'meta'        => $response->body->meta ?? null,
+                        'hasNextPage' => $response->body->links->next ?? null,
+                    ]);
+                } else {
+                    $this->renderView($api->getConnectionMessage());
+                }
 
             } else {
-                $this->errorResponse((new Logtivity_Api())->getConnectionMessage());
+                $this->welcomeResponse();
             }
         } else {
-            $this->errorResponse(__('You do not have sufficient permissions to access this page.'));
+            $this->renderView(__('You do not have sufficient permissions to access this page.'));
         }
-    }
-
-    /**
-     * @param object $response
-     *
-     * @return void
-     */
-    private function successResponse(object $response): void
-    {
-        wp_send_json([
-            'view' => logtivity_view('_logs-loop', [
-                'logs'        => $response->data,
-                'meta'        => $response->meta,
-                'hasNextPage' => $response->links->next,
-            ]),
-        ]);
-    }
-
-    /**
-     * @param string $message
-     *
-     * @return void
-     */
-    private function errorResponse(string $message): void
-    {
-        wp_send_json([
-            'view' => logtivity_view('_logs-loop', [
-                'message' => $message,
-                'logs'    => [],
-            ]),
-        ]);
-    }
-
-    /**
-     * @return void
-     */
-    private function welcomeResponse()
-    {
-        wp_send_json([
-            'view' => logtivity_view('activation', [
-                'display' => true,
-                'logo'    => false,
-            ]),
-        ]);
     }
 
     /**
@@ -114,9 +80,48 @@ class Logtivity_Log_Index_Controller
      *
      * @return ?string
      */
-    private function getInput(string $field): ?string
+    protected function getInput(string $field): ?string
     {
         return sanitize_text_field($_GET[$field] ?? null);
+    }
+
+    /**
+     * @param string|array $response
+     *
+     * @return void
+     */
+    protected function renderView($viewData): void
+    {
+        if (is_string($viewData)) {
+            $viewData = ['message' => $viewData];
+        }
+
+        $viewData = array_merge(
+            [
+                'message'     => null,
+                'logs'        => [],
+                'meta'        => null,
+                'hasNextPage' => null,
+            ],
+            $viewData
+        );
+
+        wp_send_json([
+            'view' => logtivity_view('_logs-loop', $viewData),
+        ]);
+    }
+
+    /**
+     * @return void
+     */
+    protected function welcomeResponse()
+    {
+        wp_send_json([
+            'view' => logtivity_view('activation', [
+                'display' => true,
+                'logo'    => false,
+            ]),
+        ]);
     }
 }
 

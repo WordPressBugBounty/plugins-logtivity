@@ -224,19 +224,17 @@ class Logtivity_Logger extends Logtivity_Api
     /**
      * Send the logged data to Logtivity
      *
-     * @return ?array
+     * @return void
      */
-    public function send(): ?array
+    public function send(): void
     {
         $this->maybeAddProfileLink();
 
         do_action('wp_logtivity_instance', $this);
 
         if ($this->active) {
-            return $this->makeRequest('/logs/store', $this->getData());
+            $this->makeRequest('/logs/store', $this->getData());
         }
-
-        return null;
     }
 
     /**

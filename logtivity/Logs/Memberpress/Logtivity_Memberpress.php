@@ -24,43 +24,23 @@
 
 class Logtivity_Memberpress extends Logtivity_Abstract_Logger
 {
-    /**
-     * @inheritDoc
-     */
-    protected function registerHooks(): void
-    {
-        add_action('mepr-event-member-signup-completed', [$this, 'freeSubscriptionCreated']);
-        add_action('mepr-event-subscription-created', [$this, 'subscriptionCreated']);
-        add_action('mepr-event-subscription-paused', [$this, 'subscriptionPaused']);
-        add_action('mepr-event-subscription-resumed', [$this, 'subscriptionResumed']);
-        add_action('mepr-event-subscription-stopped', [$this, 'subscriptionStopped']);
-        add_action('init', [$this, 'profileUpdated']);
-        add_filter('mepr_create_transaction', [$this, 'transactionCreated'], 10, 3);
-        add_filter('mepr_update_transaction', [$this, 'transactionUpdated'], 10, 3);
-        add_action('mepr_email_sent', [$this, 'emailSent'], 10, 3);
-        add_action('mepr-process-options', [$this, 'settingsUpdated'], 10, 1);
-    }
-
-    public function freeSubscriptionCreated($event)
+    public function freeSubscriptionCreated($event): void
     {
         $user         = $event->get_data();
         $subscription = $this->getSubscription($user);
 
-        if (!$subscription) {
-            return;
+        if ($subscription && $subscription->gateway == 'free') {
+            $product = $subscription->product();
+
+            Logtivity::log(
+                'Free Subscription Created',
+                [
+                    'Subscription ID' => $subscription->id,
+                ]
+            )
+                ->setContext($product->post_title)
+                ->send();
         }
-
-        if ($subscription->gateway != 'free') {
-            return;
-        }
-
-        $product = $subscription->product();
-
-        return (new Logtivity_Logger($user->ID))
-            ->setAction('Free Subscription Created')
-            ->setContext($product->post_title)
-            ->addMeta('Subscription ID', $subscription->id)
-            ->send();
     }
 
     protected function getSubscription($user)
@@ -72,19 +52,28 @@ class Logtivity_Memberpress extends Logtivity_Abstract_Logger
         return null;
     }
 
-    public function subscriptionCreated($event)
+    /**
+     * @param $event
+     *
+     * @return void
+     */
+    public function subscriptionCreated($event): void
     {
         $subscription  = $event->get_data();
         $user          = $subscription->user();
         $product       = $subscription->product();
         $paymentMethod = $subscription->payment_method();
 
-        return (new Logtivity_Logger($user->ID))
-            ->setAction('Subscription Created')
+        Logtivity::log(
+            'Subscription Created',
+            [
+                'Transaction Total' => $subscription->total,
+                'Payment Method'    => $paymentMethod->name,
+                'Subscription ID'   => $subscription->id,
+            ],
+            $user->ID
+        )
             ->setContext($product->post_title)
-            ->addMeta('Transaction Total', $subscription->total)
-            ->addMeta('Payment Method', $paymentMethod->name)
-            ->addMeta('Subscription ID', $subscription->id)
             ->send();
     }
 
@@ -186,6 +175,23 @@ class Logtivity_Memberpress extends Logtivity_Abstract_Logger
             ->setAction('Settings Updated')
             ->setContext('Memberpress')
             ->send();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function registerHooks(): void
+    {
+        add_action('mepr-event-member-signup-completed', [$this, 'freeSubscriptionCreated']);
+        add_action('mepr-event-subscription-created', [$this, 'subscriptionCreated']);
+        add_action('mepr-event-subscription-paused', [$this, 'subscriptionPaused']);
+        add_action('mepr-event-subscription-resumed', [$this, 'subscriptionResumed']);
+        add_action('mepr-event-subscription-stopped', [$this, 'subscriptionStopped']);
+        add_action('init', [$this, 'profileUpdated']);
+        add_filter('mepr_create_transaction', [$this, 'transactionCreated'], 10, 3);
+        add_filter('mepr_update_transaction', [$this, 'transactionUpdated'], 10, 3);
+        add_action('mepr_email_sent', [$this, 'emailSent'], 10, 3);
+        add_action('mepr-process-options', [$this, 'settingsUpdated'], 10, 1);
     }
 }
 

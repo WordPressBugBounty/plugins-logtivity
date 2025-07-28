@@ -4,7 +4,7 @@ Contributors: logtivity, stevejburge
 Tags: activity log, error logs, event monitoring, user activity, error log, activity logs, logs, log data, site activities, site events
 Requires at least: 6.6
 Tested up to: 6.8
-Stable tag: 3.1.12
+Stable tag: 3.2.0
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -261,6 +261,17 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 * Log tivity, loggtivity, logg tivity (all incorrect)
 
 == Changelog ==
+
+= 3.2.0 =
+
+* Add JSON Web Token halper class
+* Add REST api listener
+* Retrieve more detailed error information on connection fails
+* Normalize response data
+* Fix automatic settings checkin
+* Prevent disconnect on timeout errors
+
+_Release Date - Monday, July 28, 2025_
 
 = 3.1.12 =
 

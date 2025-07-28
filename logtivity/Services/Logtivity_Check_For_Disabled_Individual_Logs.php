@@ -24,90 +24,107 @@
 
 class Logtivity_Check_For_Disabled_Individual_Logs
 {
-	public function __construct()
-	{
-		add_action('wp_logtivity_instance', [$this, 'handle'], 10, 999);
-	}
+    /**
+     * @var Logtivity_Options
+     */
+    protected Logtivity_Options $options;
 
-	public function handle($Logtivity_Logger)
-	{
-		foreach ($this->getLogsToExclude() as $log) {
-			if ($this->check($Logtivity_Logger, $log)) {
-				$Logtivity_Logger->stop();
-			}
-		}
+    public function __construct()
+    {
+        add_action('wp_logtivity_instance', [$this, 'handle'], 10, 2);
+    }
 
-		foreach ($this->globalLogsToExclude() as $log) {
-			if ($this->check($Logtivity_Logger, $log)) {
-				$Logtivity_Logger->stop();
-			}
-		}
-	}
+    /**
+     * @param Logtivity_Logger $logger
+     *
+     * @return void
+     */
+    public function handle(Logtivity_Logger $logger): void
+    {
+        // Refresh options whenever invoked
+        $this->options = new Logtivity_Options();
 
-	public function check($Logtivity_Logger, $log)
-	{
-		$array = explode('&&', $log);
+        $exclusions = array_unique(
+            array_merge(
+                $this->parseExcludeEntries('logtivity_disable_individual_logs'),
+                $this->parseExcludeEntries('logtivity_global_disabled_logs')
+            )
+        );
 
-		if (isset($array[0]) && isset($array[1])) {
-			if (trim($array[0]) === '*' && trim($array[1]) === '*') {
-				return;
-			}
-		    if ($this->matches($Logtivity_Logger->action, $array[0]) && $this->matches($Logtivity_Logger->context, $array[1])) {
-		        return true;
-		    }
-		} elseif(isset($array[0])) {
-			if (trim($array[0]) === '*') {
-				return;
-			}
-			if ($this->matches($Logtivity_Logger->action, $array[0])) {
-		        return true;
-		    }
-		}
-		return false;
-	}
+        foreach ($exclusions as $exclusion) {
+            if ($this->isDisabled($logger, $exclusion)) {
+                $logger->stop();
 
-	private function matches($keyword, $disabledKeyword)
-	{
-        // @TODO: this may not be the best way to check the arguments
-		if (is_string($keyword) && is_string($disabledKeyword)) {
-			$keyword = trim(strtolower($keyword));
-			$disabledKeyword = trim(strtolower($disabledKeyword));
+                return;
+            }
+        }
+    }
 
-			if ($disabledKeyword === '*') {
-				return true;
-			}
+    /**
+     * @param string $option
+     *
+     * @return array
+     */
+    protected function parseExcludeEntries(string $option): array
+    {
+        $value = (string)$this->options->getOption($option);
 
-			if (strpos($disabledKeyword, '*') !== false) {
-				return strpos($keyword, str_replace('*', '', $disabledKeyword)) !== false;
-			}
+        $entries = preg_split("/\\r\\n|\\r|\\n/", $value);
 
-			return $keyword == $disabledKeyword;
-		}
+        return array_unique(array_filter($entries));
+    }
 
-		return false;
-	}
+    /**
+     * @param Logtivity_Logger $logger
+     * @param string           $exclusion
+     *
+     * @return bool
+     */
+    protected function isDisabled(Logtivity_Logger $logger, string $exclusion): bool
+    {
+        $array   = explode('&&', $exclusion);
+        $action  = strtolower(trim((string)array_shift($array)));
+        $context = strtolower(trim((string)array_shift($array)));
 
-	private function getLogsToExclude()
-	{
-		$value = (new Logtivity_Options)->getOption('logtivity_disable_individual_logs');
+        if ($action == '*' && $context == '*') {
+            return false;
+        } elseif ($this->matches($logger->action, $action) && $this->matches($logger->context, $context)) {
+            return true;
+        } elseif ($action == '*') {
+            return false;
+        } elseif ($this->matches($logger->action, $action)) {
+            return true;
+        }
 
-		if ($value == '') {
-			return [];
-		}
+        return false;
+    }
 
-		return preg_split("/\\r\\n|\\r|\\n/", $value);
-	}
+    /**
+     * @param ?string $keywordTarget
+     * @param ?string $keywordCheck
+     *
+     * @return bool
+     */
+    protected function matches(?string $keywordTarget, ?string $keywordCheck): bool
+    {
+        $keywordTarget = strtolower(trim((string)$keywordTarget));
+        $keywordCheck  = strtolower(trim((string)$keywordCheck));
 
-	public function globalLogsToExclude()
-	{
-		$value = (new Logtivity_Options)->getOption('logtivity_global_disabled_logs');
+        if ($keywordTarget && $keywordCheck) {
+            if ($keywordCheck == '*') {
+                return true;
+            }
 
-		if ($value == '') {
-			return [];
-		}
+            if (strpos($keywordCheck, '*') !== false) {
+                $regex = str_replace(['*', '/'], ['.*?', '\/'], $keywordCheck);
+                return preg_match('/' . $regex . '/', $keywordTarget);
+            }
 
-		return preg_split("/\\r\\n|\\r|\\n/", $value);
-	}
+            return $keywordCheck == $keywordTarget;
+        }
+
+        return false;
+    }
 }
 
-$CheckForDisabledIndividualLogs = new Logtivity_Check_For_Disabled_Individual_Logs;
+new Logtivity_Check_For_Disabled_Individual_Logs();

@@ -24,64 +24,59 @@
 
 class Logtivity_User extends Logtivity_Abstract_Logger
 {
-    protected static $loggedUserlogin = false;
+    protected static bool $loggedUserlogin = false;
 
     /**
-     * @inheritDoc
+     * @param string  $username
+     * @param WP_User $user
+     *
+     * @return void
      */
-    protected function registerHooks(): void
+    public function userLoggedIn(string $username, WP_User $user)
     {
-        add_action('wp_login', [$this, 'wpLogin'], 10, 2);
-        add_action('wp_logout', [$this, 'userLoggedOut'], 10, 1);
-        add_action('user_register', [$this, 'userCreated'], 10, 1);
-        add_action('delete_user', [$this, 'userDeleted']);
-        add_action('profile_update', [$this, 'profileUpdated'], 10, 2);
-    }
+        if (static::$loggedUserlogin == false) {
+            static::$loggedUserlogin = true;
 
-    public function wpLogin($user_login, $user)
-    {
-        if (self::$loggedUserlogin) {
-            return;
+            $logger = Logtivity::log()->setUser($user->ID);
+
+            $logger->setAction('User Logged In')
+                ->setContext($logger->user->getRole())
+                ->send();
         }
-
-        return $this->userLoggedIn($user->ID);
     }
 
-    public function userLoggedIn($user_id)
+    /**
+     * @param int $userId
+     *
+     * @return void
+     */
+    public function userLoggedOut(int $userId): void
     {
-        self::$loggedUserlogin = true;
+        if ($userId) {
+            $logger = Logtivity::log()->setUser($userId);
 
-        $logtivityUser = new Logtivity_WP_User($user_id);
-
-        return (new Logtivity_Logger($user_id))
-            ->setAction('User Logged In')
-            ->setContext($logtivityUser->getRole())
-            ->send();
-    }
-
-    public function userLoggedOut($user_id)
-    {
-        if ($user_id == 0) {
-            return;
+            $logger
+                ->setAction('User Logged Out')
+                ->setContext($logger->user->getRole())
+                ->send();
         }
-
-        $user = new Logtivity_WP_User($user_id);
-
-        return (new Logtivity_Logger($user_id))
-            ->setAction('User Logged Out')
-            ->setContext($user->getRole())
-            ->send();
     }
 
-    public function userCreated($user_id)
+    /**
+     * @param int $userId
+     *
+     * @return void
+     */
+    public function userCreated(int $userId): void
     {
         $log = Logtivity::log();
 
-        if (!is_user_logged_in()) {
-            $log->setUser($user_id);
+        if (is_user_logged_in() == false) {
+            $log->setUser($userId);
+            $user = $log->user;
+        } else {
+            $user = new Logtivity_WP_User($userId);
         }
-
-        $user = new Logtivity_WP_User($user_id);
 
         $log->setAction('User Created')
             ->setContext($user->getRole())
@@ -89,9 +84,14 @@ class Logtivity_User extends Logtivity_Abstract_Logger
             ->send();
     }
 
-    public function userDeleted($user_id)
+    /**
+     * @param int $userId
+     *
+     * @return void
+     */
+    public function userDeleted(int $userId): void
     {
-        $user = new Logtivity_WP_User($user_id);
+        $user = new Logtivity_WP_User($userId);
 
         Logtivity::log()
             ->setAction('User Deleted')
@@ -100,15 +100,27 @@ class Logtivity_User extends Logtivity_Abstract_Logger
             ->send();
     }
 
-    public function profileUpdated($user_id, $old_user_data)
+    public function profileUpdated($userId)
     {
-        $user = new Logtivity_WP_User($user_id);
+        $user = new Logtivity_WP_User($userId);
 
         Logtivity::log()
             ->setAction('User Updated')
             ->setContext($user->getRole())
             ->addMeta('Username', $user->userLogin())
             ->send();
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function registerHooks(): void
+    {
+        add_action('wp_login', [$this, 'userLoggedIn'], 10, 2);
+        add_action('wp_logout', [$this, 'userLoggedOut'], 10, 1);
+        add_action('user_register', [$this, 'userCreated'], 10, 1);
+        add_action('delete_user', [$this, 'userDeleted']);
+        add_action('profile_update', [$this, 'profileUpdated'], 10, 1);
     }
 }
 

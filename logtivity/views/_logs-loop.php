@@ -23,8 +23,11 @@
  */
 
 /**
+ * @var string   $fileName
+ * @var ?string  $message
  * @var object[] $logs
- * @var ?string  $hasNextPage
+ * @var object   $meta
+ * @var string   $hasNextPage
  */
 
 ?>

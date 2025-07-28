@@ -3,29 +3,27 @@ jQuery(function($) {
         init: function() {
             this.container = $('#logtivity-log-index');
 
-            if (!this.container.length) {
-                return;
+            if (this.container.length) {
+                this.form = $('#logtivity-log-index-search-form');
+                this.listenForPagination();
+                this.listenForChange();
+                this.filter();
+                this.listenForViewLog()
+                this.listenForCloseModal();
             }
-
-            this.form = $('#logtivity-log-index-search-form');
-            this.listenForPagination();
-            this.listenForChange();
-            this.filter();
-            this.listenForViewLog()
-            this.listenForCloseModal();
         },
 
         listenForCloseModal: function() {
             let listenForCloseModal = this;
 
-            $("body").on("click", ".js-logtivity-notice-dismiss", function(e) {
+            $('body').on('click', '.js-logtivity-notice-dismiss', function(e) {
                 e.preventDefault();
 
                 listenForCloseModal.hideModal();
             });
 
             $(document).on('keyup', function(e) {
-                if (e.key === "Escape") {
+                if (e.key === 'Escape') {
                     listenForCloseModal.hideModal();
                 }
 
@@ -48,7 +46,7 @@ jQuery(function($) {
         listenForViewLog: function() {
             let listenForViewLog = this;
 
-            $("body").on("click", ".js-logtivity-view-log", function(e) {
+            $('body').on('click', '.js-logtivity-view-log', function(e) {
                 e.preventDefault();
 
                 listenForViewLog.showLogModal($(this).next().html());
@@ -73,7 +71,7 @@ jQuery(function($) {
             let listenForChange = this,
                 timeout         = null;
 
-            $("body").on("input", "#logtivity-log-index-search-form input", function(e) {
+            $('body').on('input', '#logtivity-log-index-search-form input', function(e) {
                 e.preventDefault();
 
                 $('#logtivity_page').val('');
@@ -92,14 +90,16 @@ jQuery(function($) {
 
         loading: function() {
             this.container.html(
-                '<div style="text-align: center; padding-bottom: 20px"><div class="spinner is-active" style="float:none;width:auto;height:auto;padding:10px 0 10px 50px;background-position:20px 0;"></div></div>'
+                '<div style="text-align: center; padding-bottom: 20px">'
+                + '<div class="spinner is-active" style="float:none;width:auto;height:auto;padding:10px 0 10px 50px;background-position:20px 0;"></div>'
+                + '</div>'
             );
         },
 
         listenForPagination: function() {
             let listenForPagination = this;
 
-            $("body").on("click", ".js-logtivity-pagination", function(e) {
+            $('body').on('click', '.js-logtivity-pagination', function(e) {
                 e.preventDefault();
 
                 $('#logtivity_page').val($(this).attr('data-page'));

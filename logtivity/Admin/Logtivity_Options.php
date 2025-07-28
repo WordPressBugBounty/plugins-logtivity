@@ -28,6 +28,13 @@
 class Logtivity_Options
 {
     /**
+     * Checkin for settings updates in designated minutes
+     *
+     * @var int
+     */
+    protected int $checkinDelay = 10;
+
+    /**
      * The option keys that we can save to the options table
      *
      * @var array
@@ -174,7 +181,7 @@ class Logtivity_Options
             $lastCheckin = $lastCheckin['date'] ?? null;
 
             if ($lastCheckin) {
-                return time() - strtotime($lastCheckin) > 10 * MINUTE_IN_SECONDS;
+                return time() - strtotime($lastCheckin) > ($this->checkinDelay * MINUTE_IN_SECONDS);
             }
         }
 
@@ -231,39 +238,15 @@ class Logtivity_Options
      */
     public function update(array $data = [], bool $checkApiKey = true): void
     {
-        if (count($data)) {
-            foreach ($this->settings as $setting => $default) {
-                if (array_key_exists($setting, $data) && $this->validateSetting($setting, $data[$setting])) {
-                    update_option($setting, $data[$setting]);
-                }
-            }
-        } else {
-            foreach ($this->settings as $setting => $default) {
-                if (array_key_exists($setting, $_POST) && $this->validateSetting($setting, $_POST[$setting])) {
-                    update_option($setting, $_POST[$setting]);
-                }
+        $settings = array_intersect_key($data ?: $_POST, $this->settings);
+        foreach ($settings as $key => $value) {
+            if ($this->validateSetting($key, $value)) {
+                update_option($key, $value);
             }
         }
 
         if ($checkApiKey) {
             $this->checkApiKey($data['logtivity_site_api_key'] ?? $_POST['logtivity_site_api_key'] ?? null);
-        }
-    }
-
-    /**
-     * @param ?string $apiKey
-     *
-     * @return void
-     */
-    public function checkApiKey(?string $apiKey): void
-    {
-        if ($apiKey) {
-            Logtivity::log()
-                ->setAction('Settings Updated')
-                ->setContext('Logtivity')
-                ->ignoreStatus()
-                ->waitForResponse()
-                ->send();
         }
     }
 
@@ -290,5 +273,21 @@ class Logtivity_Options
         }
 
         return true;
+    }
+
+    /**
+     * @param ?string $apiKey
+     *
+     * @return void
+     */
+    public function checkApiKey(?string $apiKey): void
+    {
+        if ($apiKey) {
+            Logtivity::log()
+                ->setAction('Settings Updated')
+                ->setContext('Logtivity')
+                ->waitForResponse()
+                ->send();
+        }
     }
 }

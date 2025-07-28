@@ -50,6 +50,7 @@ function logtivity_dd($dump)
 function logtivity_view(string $fileName, array $vars = []): string
 {
     extract($vars);
+    unset($vars);
 
     ob_start();
 
