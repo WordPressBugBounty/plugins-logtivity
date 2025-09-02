@@ -82,17 +82,23 @@ class Logtivity_Check_For_Disabled_Individual_Logs
      */
     protected function isDisabled(Logtivity_Logger $logger, string $exclusion): bool
     {
-        $array   = explode('&&', $exclusion);
-        $action  = strtolower(trim((string)array_shift($array)));
-        $context = strtolower(trim((string)array_shift($array)));
+        $array = explode('&&', $exclusion);
 
-        if ($action == '*' && $context == '*') {
-            return false;
-        } elseif ($this->matches($logger->action, $action) && $this->matches($logger->context, $context)) {
+        $actionExclude  = strtolower(trim((string)array_shift($array)));
+        $contextExclude = strtolower(trim((string)array_shift($array)));
+
+        $action  = strtolower(trim((string)$logger->action));
+        $context = strtolower(trim((string)($logger->context ?? null)));
+
+        if (
+            $actionExclude == $action
+            && ($contextExclude == false || $contextExclude == $context)
+        ) {
             return true;
-        } elseif ($action == '*') {
-            return false;
-        } elseif ($this->matches($logger->action, $action)) {
+        } elseif (
+            $this->matches($actionExclude, $action)
+            && ($contextExclude == false || $this->matches($contextExclude, $context))
+        ) {
             return true;
         }
 
@@ -100,27 +106,17 @@ class Logtivity_Check_For_Disabled_Individual_Logs
     }
 
     /**
-     * @param ?string $keywordTarget
-     * @param ?string $keywordCheck
+     * @param ?string $exclusion
+     * @param ?string $text
      *
      * @return bool
      */
-    protected function matches(?string $keywordTarget, ?string $keywordCheck): bool
+    protected function matches(?string $exclusion, ?string $text): bool
     {
-        $keywordTarget = strtolower(trim((string)$keywordTarget));
-        $keywordCheck  = strtolower(trim((string)$keywordCheck));
+        if ($exclusion && $text) {
+            $regex = str_replace(['*', '/'], ['.*?', '\/'], $exclusion);
 
-        if ($keywordTarget && $keywordCheck) {
-            if ($keywordCheck == '*') {
-                return true;
-            }
-
-            if (strpos($keywordCheck, '*') !== false) {
-                $regex = str_replace(['*', '/'], ['.*?', '\/'], $keywordCheck);
-                return preg_match('/' . $regex . '/', $keywordTarget);
-            }
-
-            return $keywordCheck == $keywordTarget;
+            return preg_match('/^' . $regex . '$/', $text);
         }
 
         return false;

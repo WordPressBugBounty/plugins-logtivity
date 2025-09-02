@@ -57,8 +57,8 @@ echo logtivity_view('_admin-header', compact('options'));
                     You can find this value by logging into your account and navigating to the
                     <?php echo sprintf(
                         '<a href="%s" target="_blank">%s</a>.',
-                        logtivity_get_app_url() . '/team-settings/developers',
-                        'developers page in Team Settings'
+                        logtivity_get_app_url() . '/team-settings',
+                        'Team Settings page'
                     );
                     ?>
                 </div>

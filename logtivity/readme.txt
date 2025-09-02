@@ -4,7 +4,7 @@ Contributors: logtivity, stevejburge
 Tags: activity log, error logs, event monitoring, user activity, error log, activity logs, logs, log data, site activities, site events
 Requires at least: 6.6
 Tested up to: 6.8
-Stable tag: 3.2.0
+Stable tag: 3.2.1
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -111,7 +111,7 @@ There’s a “White Label Mode” in Logtivity, so you can provide the smoothes
 == Installation ==
 #### From your WordPress dashboard
 Visit 'Plugins > Add New'
-Search for 'logtivity’
+Search for 'logtivity'
 Activate Logtivity from your Plugins page.
 
 #### From WordPress.org
@@ -262,383 +262,253 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 
 == Changelog ==
 
-= 3.2.0 =
+= 3.2.1 - 02 Sep 2025 =
+  * Fix: issues with disable log string matching
+  * Fix: Improve domain matching for API token security
+  * Update: Allow send method to return response
+  * Update: Send additional data from options endpoint
+  * Update: Link to Team API
+  * Update: Improve error message retrieval from latest response
+  * Fix: Disabled log string matching
+  * Fix: Improve domain checks on API Endpoints
+  * Update: Always include occurred_at in request properties
+
+= 3.2.0 - 28 Jul 2025 =
+  * Add JSON Web Token halper class
+  * Add REST api listener
+  * Retrieve more detailed error information on connection fails
+  * Normalize response data
+  * Fix automatic settings checkin
+  * Prevent disconnect on timeout errors
+
+= 3.1.12 - 4 Jun 2025 =
+  * New: Register Site with Team API
+  * Update: Adjust screen styles and messaging
+
+= 3.1.11 - 15 May 2025 =
+  * Update: Improvements to welcome messaging
+  * Update: Redirect on activate
+  * Update: WordPress version compatibility
+
+= 3.1.10 - 8 May 2025 =
+  * Fix: error handling conflict with other error handlers
+  * Fix: Allow passing null to method
+  * Fix: Allow optional second argument
+  * Check in periodically when in failed/paused state
+  * Add codeception testing suite
+
+= 3.1.9 - 14 Apr 14 2025 =
+  * Fix fatal error on new installs
+
+= 3.1.8 - 14 Apr 2025=
+  * Add option to verify site url with the app
+
+= 3.1.7 - 27 Mar 2025 =
+  * Fix: Check for installed custom capabilities
+  * Improved input sanitization
+
+= 3.1.6 - 6 Mar 2025 =
+  * Update: Automatically check and ensure capabilities exist
+
+= 3.1.5 - 25 Feb 2025 =
+  * Add: new capabilities - 'view logs', 'view log settings'
+
+= 3.1.4 - 9 Jan 2025 =
+  * Fix: Deprecation warning, #50
+  * Fix: Unable to uncheck settings
+
+= 3.1.3 - 21 Nov 2024 =
+  * Fix: Grammar, #46
+  * Change: Language for disabled logs, #47
+  * Change: Checkboxes checked by default, #48
+  * Fix: Close potential security issue
+
+= 3.1.2 - 30 Sep 2024 =
+  * Backout to v3.0.2 due to breaking changes
+
+= 3.1.1 – 12 Sep 2024 =
+  * Fix: Updating failed. The response is not a valid JSON response, #38;
+
+= 3.1.0 – 11 Sep 2024 =
+  * Change: Update plugin description, #31;
+  * Change: Enable the settings by default, #12;
+  * Change: Welcome message, #11;
+  * Change: Hide the "Disable Individual Logs" box if is empty, #22;
+  * Change: Text updates, #23, #33;
+  * Change: Check if api exists in order to hide the free trial sidebar, #36;
+  * Change: Go fullwidth when API exists
+  * Fix: Text is not translatable, #24;
+  * Fix: Redesign the modal for log details, #19;
+  * Fix: Redirect users to Settings page on plugin activation, #8;
+  * Standards updates/code refresh
+
+= 3.0.2 – 19 Jun 2024 =
+  * Fix incompatibility with Code Snippets plugin
+  * Design changes
+
+= 3.0.1 – 6 Jan 2024=
+  * Change Logtivity settings URL in white label mode.
+  * Fix User Logged In event firing when external system logs in for backups etc.
+
+= 3.0.0 – 11 Nov 2023 =
+  * Add site health features.
+
+= 2.3.0 – 2 Mar 2023 =
+  * Add ability to set a custom name for the plugin when listed in /wp-admin/plugins.php
+  * Reduce timeout when checking in the with API for settings updates to ensure to not affect performance.
+
+= 2.2.1 – 16 Feb 2023 =
+  * Fix error on PHP7.0 on activation.
+  * Rename 'Profile Updated' log to User Updated.
+
+= 2.2.0 – 7 Feb 2023 =
+  * Add support for globally disabling default logs and enabling/disabling Options table and Post Meta changes.
 
-* Add JSON Web Token halper class
-* Add REST api listener
-* Retrieve more detailed error information on connection fails
-* Normalize response data
-* Fix automatic settings checkin
-* Prevent disconnect on timeout errors
+= 2.1.1 – 18 Jan 2023 =
+  * Fix undefined variable $meta in _logs-loop.php admin page when not connected to Logtivity.
 
-_Release Date - Monday, July 28, 2025_
-
-= 3.1.12 =
-
-* New: Register Site with Team API
-* Update: Adjust screen styles and messaging
-
-_Release Date - Wednesday, June 4, 2025_
-
-= 3.1.11 =
-
-* Update: Improvements to welcome messaging
-* Update: Redirect on activate
-* Update: WordPress version compatibility
-
-_Release Date - Thursday, May 15, 2025_
-
-= 3.1.10 =
-
-* Fix: error handling conflict with other error handlers
-* Fix: Allow passing null to method
-* Fix: Allow optional second argument
-* Check in periodically when in failed/paused state
-* Add codeception testing suite
-
-_Release Date - Thursday, May 8 2025_
-
-= 3.1.9 =
-
-* Fix fatal error on new installs
-
-_Release Date - Monday, April 14 2025_
-
-= 3.1.8 =
-
-* Add option to verify site url with the app
-
-_Release Date - Monday, April 14 2025_
-
-= 3.1.7 =
-
-* Fix: Check for installed custom capabilities
-* Improved input sanitization
-
-_Release Date - Thursday, March 27 2025_
-
-= 3.1.6 =
-
-* Update: Automatically check and ensure capabilities exist
-
-_Release Date - Thursday, March 6th 2025_
-
-= 3.1.5 =
-
-* Add: new capabilities - 'view logs', 'view log settings'
-
-_Release Date - Tuesday, February 25th 2025_
-
-= 3.1.4 =
-
-_Release Date - Thursday, January 9th 2025_
-
-* Fix: Deprecation warning, #50
-* Fix: Unable to uncheck settings
-
-= 3.1.3 =
-
-_Release Date - Thursday, November 21st 2024_
-
-* Fix: Grammar, #46
-* Change: Language for disabled logs, #47
-* Change: Checkboxes checked by default, #48
-* Fix: Close potential security issue
-
-= 3.1.2 =
-
-_Release Date - Friday, September 30th 2024_
-
-* Backout to v3.0.2 due to breaking changes
-
-= 3.1.1 =
-
-_Release Date – Thursday, September 12th 2024_
-
-* Fix: Updating failed. The response is not a valid JSON response, #38;
-
-= 3.1.0 =
-
-_Release Date – Wednesday 11th September 2024_
-
-* Change: Update plugin description, #31;
-* Change: Enable the settings by default, #12;
-* Change: Welcome message, #11;
-* Change: Hide the "Disable Individual Logs" box if is empty, #22;
-* Change: Text updates, #23, #33;
-* Change: Check if api exists in order to hide the free trial sidebar, #36;
-* Change: Go fullwidth when API exists
-* Fix: Text is not translatable, #24;
-* Fix: Redesign the modal for log details, #19;
-* Fix: Redirect users to Settings page on plugin activation, #8;
-* Standards updates/code refresh
-
-= 3.0.2 =
-
-_Release Date – Wednesday, June 19th 2024_
-
-* Fix incompatibility with Code Snippets plugin
-* Design changes
-
-= 3.0.1 =
-
-_Release Date – Saturday 6th January 2024_
-
-* Change Logtivity settings URL in white label mode.
-* Fix User Logged In event firing when external system logs in for backups etc.
-
-= 3.0.0 =
-
-_Release Date – Saturday 11th November 2023_
-
-* Add site health features.
-
-= 2.3.0 =
-
-_Release Date – Thursday 2nd March 2023_
-
-* Add ability to set a custom name for the plugin when listed in /wp-admin/plugins.php
-* Reduce timeout when checking in the with API for settings updates to ensure to not affect performance.
-
-= 2.2.1 =
-
-_Release Date – Thursday 16th February 2023_
-
-* Fix error on PHP7.0 on activation.
-* Rename 'Profile Updated' log to User Updated.
-
-= 2.2.0 =
-
-_Release Date – Tuesday 7th February 2023_
-
-* Add support for globally disabling default logs and enabling/disabling Options table and Post Meta changes.
-
-= 2.1.1 =
-
-_Release Date – Wednesday 18th January 2023_
-
-* Fix undefined variable $meta in _logs-loop.php admin page when not connected to Logtivity.
-
-= 2.1.0 =
-
-_Release Date – Tuesday 6th December 2022_
-
-* Add ability to hide Logtvity from the WP UI using global settings.
-* Check for new global settings every 10 minutes.
-* When registering a site dynamically, pull in the site name.
-
-= 2.0.1 =
-
-_Release Date – Monday 7th November 2022_
-
-* Wrap better messaging on logs page when there are no results.
-* Refine Option Updated meta sent.
-* Add wrap error logging in try catch just incase of issue during logging.
-
-= 2.0 =
-
-_Release Date – Wednesday 26th October 2022_
-
-* Add error logging.
-* Refine Option meta update logging by only logging updates done via a POST request. This avoids logging of less useful updates such as plugins setting last_check/synced timestamps that don't need to be logged.
-
-= 1.20.1 =
-
-_Release Date – Friday 17th June 2022_
-
-* Fix minor layout issue in log modal.
-* Disable some unuseful Option Updated logs.
-
-= 1.20.0 =
-
-_Release Date – Friday 17th June 2022_
-
-* Add integration with Code Snippets plugin.
-
-= 1.19.0 =
-
-_Release Date – Thursday 16th June 2022_
-
-* Start logging after plugins_loaded hook to ensure everything has loaded first.
-
-= 1.18.0 =
-
-_Release Date – Monday 13th June 2022_
-
-* Add logging of Option Updates.
-* Allow wildcards when disabling specific logs.
-
-= 1.17.1 =
-
-_Release Date – Saturday 4th June 2022_
-
-* Fix occasional User Logged Out logging unnecessarily.
-* Hide latest response info when debug mode is off.
-
-= 1.17.0 =
-
-_Release Date – Friday 13th May 2022_
-
-* Added ability to globally disable logs across all sites from the Logtivity dashboard.
-* Added ability to white label the Logtivity plugin across all sites from the Logtivity dashboard.
-
-= 1.16.0 =
-
-_Release Date – Monday 2nd May 2022_
-
-* Add support for WP All Import
-
-= 1.15.0 =
-
-_Release Date – Tuesday 19th April 2022_
-
-* Add ability for admins to disable individual actions from being logged.
-
-= 1.14.0 =
-
-_Release Date – Sunday 10th April 2022_
-
-* Add logging of post meta changes.
-
-= 1.13.0 =
-
-_Release Date – Saturday 26th March 2022_
-
-* Add logging of Term Created and Deleted.
-
-= 1.12.0 =
-
-_Release Date – Thursday 24th March 2022_
-
-* Fix unexpected ) error on old vesions of php.
-* Add logging of Term Updated.
-
-= 1.11.1 =
-
-_Release Date – Sunday 20th February 2022_
-
-* Fix md5 hash of site_url relative to previous release of detecting url change.
-
-= 1.11.0 =
-
-_Release Date – Sunday 20th February 2022_
-
-* Disable logging if site_url changes and show notice to admin to stop accidental logs coming from dev/staging environments.
-
-= 1.10.0 =
-
-_Release Date – Monday 14th February 2022_
-
-* Add ability to register site with Logtivity from within the plugin by running a code snippet.
-
-= 1.9.2 =
-
-_Release Date – Sunday 23rd January 2022_
-
-* Allow the Logtivity config to be set via filters.
-
-= 1.9.1 =
-
-_Release Date – Wednesday 22nd December 2021_
-
-* Fix bug where logs weren't displaying when Logtivity debug mode was set to false.
-
-= 1.9.0 =
-
-_Release Date – Wednesday 22nd December 2021_
-
-* Moved settings page to top level menu item to allow for sub menu.
-* Added new logs page in wp-admin to allow viewing logs inside WordPress.
-
-= 1.8.2 =
-
-_Release Date – Thursday 10th December 2021_
-
-* Fix unnecessary encoding of hyphens being passed to the context field in the API.
-
-= 1.8.1 =
-
-_Release Date – Thursday 9th December 2021_
-
-* Fix conflict between Logtivity and Jetpack Widget Visibility where updating widget visibility in the customiser would fail.
-
-= 1.8.0 =
-
-_Release Date – Wednesday 8th December 2021_
-
-* Added Formidable Pro integration.
-* Added CSS tweaks to Logtivity Settings page.
-
-= 1.7.1 =
-
-_Release Date – Sunday 7th November 2021_
-
-* Change action that Logout log hooks into to ensure user_id is attached to log.
-
-= 1.7.0 =
-
-_Release Date – Wednesday 17th August 2021_
-
-* Improvements to Settings page.
-* Log EDD License Renewed
-* Log EDD License Renewal Notification Unsubscribed
-* Log EDD License Status Changed to [new_status]
-* Log EDD License Upgraded
-* Log EDD Site Deactivated
-* Log EDD Site Added
-* Log EDD Subscription Renewed
-* Log EDD Subscription Created
-* Log EDD Subscription Updated
-* Log EDD Subscription [status] eg. Expired, Cancelled etc.
-* Log EDD Subscription Deleted
-* Log EDD Payment Method Updated
-
-= 1.6.1 =
-
-_Release Date – Wednesday 4th August 2021_
-
-* Begin adding support for the Easy Digital Downloads Software Licensing Addon.
-* Log License Created events.
-* Log License Activated events.
-* Log License Activation Failed events.
-* Log License Deactivated events.
-* Don't log new comments when they are marked as spam.
+= 2.1.0 – 6 Dec 2022 =
+  * Add ability to hide Logtvity from the WP UI using global settings.
+  * Check for new global settings every 10 minutes.
+  * When registering a site dynamically, pull in the site name.
+
+= 2.0.1 – 7 Nov 2022 =
+  * Wrap better messaging on logs page when there are no results.
+  * Refine Option Updated meta sent.
+  * Add wrap error logging in try catch just incase of issue during logging.
+
+= 2.0.0 – 26 Oct 2022 =
+  * Add error logging.
+  * Refine Option meta update logging by only logging updates done via a POST request. This avoids logging of less useful updates such as plugins setting last_check/synced timestamps that don't need to be logged.
+
+= 1.20.1 – 17 Jun 2022 =
+  * Fix minor layout issue in log modal.
+  * Disable some unuseful Option Updated logs.
+
+= 1.20.0 – 17 Jun 2022 =
+  * Add integration with Code Snippets plugin.
+
+= 1.19.0 – 16 Jun 2022 =
+  * Start logging after plugins_loaded hook to ensure everything has loaded first.
+
+= 1.18.0 – 13 Jun 2022 =
+  * Add logging of Option Updates.
+  * Allow wildcards when disabling specific logs.
+
+= 1.17.1 – 4 Jun 2022=
+  * Fix occasional User Logged Out logging unnecessarily.
+  * Hide latest response info when debug mode is off.
+
+= 1.17.0 – 13 May 2022=
+  * Added ability to globally disable logs across all sites from the Logtivity dashboard.
+  * Added ability to white label the Logtivity plugin across all sites from the Logtivity dashboard.
+
+= 1.16.0 – 2 May 2022 =
+  * Add support for WP All Import
+
+= 1.15.0 – 19 Apr 2022 =
+  * Add ability for admins to disable individual actions from being logged.
+
+= 1.14.0 – 10 Apr 2022 =
+  * Add logging of post meta changes.
+
+= 1.13.0 – 26 Mar 2022 =
+  * Add logging of Term Created and Deleted.
+
+= 1.12.0 – 24 Mar 2022 =
+  * Fix unexpected ) error on old vesions of php.
+  * Add logging of Term Updated.
+
+= 1.11.1 – 20 Feb 2022 =
+  * Fix md5 hash of site_url relative to previous release of detecting url change.
+
+= 1.11.0 – 20 Feb 2022 =
+  * Disable logging if site_url changes and show notice to admin to stop accidental logs coming from dev/staging environments.
+
+= 1.10.0 - 14 Feb 2022 =
+  * Add ability to register site with Logtivity from within the plugin by running a code snippet.
+
+= 1.9.2 – 23 Jan 2022 =
+  * Allow the Logtivity config to be set via filters.
+
+= 1.9.1 – 22 Dec 2021 =
+  * Fix bug where logs weren't displaying when Logtivity debug mode was set to false.
+
+= 1.9.0 – 22 Dec 2021 =
+  * Moved settings page to top level menu item to allow for sub menu.
+  * Added new logs page in wp-admin to allow viewing logs inside WordPress.
+
+= 1.8.2 – 10 Dec 2021 =
+  * Fix unnecessary encoding of hyphens being passed to the context field in the API.
+
+= 1.8.1 – 9 Dec 2021 =
+  * Fix conflict between Logtivity and Jetpack Widget Visibility where updating widget visibility in the customiser would fail.
+
+= 1.8.0 – 8 Dec 2021 =
+  * Added Formidable Pro integration.
+  * Added CSS tweaks to Logtivity Settings page.
+
+= 1.7.1 – 7 Nov 2021 =
+  * Change action that Logout log hooks into to ensure user_id is attached to log.
+
+= 1.7.0 - 17 Aug 2021 =
+  * Improvements to Settings page.
+  * Log EDD License Renewed
+  * Log EDD License Renewal Notification Unsubscribed
+  * Log EDD License Status Changed to [new_status]
+  * Log EDD License Upgraded
+  * Log EDD Site Deactivated
+  * Log EDD Site Added
+  * Log EDD Subscription Renewed
+  * Log EDD Subscription Created
+  * Log EDD Subscription Updated
+  * Log EDD Subscription [status] eg. Expired, Cancelled etc.
+  * Log EDD Subscription Deleted
+  * Log EDD Payment Method Updated
+
+= 1.6.1 – 4 Aug 2021 =
+  * Begin adding support for the Easy Digital Downloads Software Licensing Addon.
+  * Log License Created events.
+  * Log License Activated events.
+  * Log License Activation Failed events.
+  * Log License Deactivated events.
+  * Don't log new comments when they are marked as spam.
 
 = 1.6.0 =
-* Added initial Easy Digital Downloads core integration.
-* Track when Core Settings are updated.
-* Track when Permalinks are updated.
-* Track when Memberpress Transactions are Created/Updated.
-* Track when Memberpress Emails are sent.
-* Track when a Memberpress User Profile is updated.
-* Track when Memberpress Settings are Updated.
-* Track WordPress comments CRUD.
+  * Added initial Easy Digital Downloads core integration.
+  * Track when Core Settings are updated.
+  * Track when Permalinks are updated.
+  * Track when Memberpress Transactions are Created/Updated.
+  * Track when Memberpress Emails are sent.
+  * Track when a Memberpress User Profile is updated.
+  * Track when Memberpress Settings are Updated.
+  * Track WordPress comments CRUD.
 
 = 1.5.0 =
-* Renamed Download Monitor Action name to File Downloaded.
-* Added Request URL as log meta.
-* Added Request Type as log meta.
+  * Renamed Download Monitor Action name to File Downloaded.
+  * Added Request URL as log meta.
+  * Added Request Type as log meta.
 
 = 1.4.0 =
-* Removed deprecated async method from Logtivity_Logger class.
-* Added API Key verification when updating Logtivity settings.
+  * Removed deprecated async method from Logtivity_Logger class.
+  * Added API Key verification when updating Logtivity settings.
 
 = 1.3.1 =
-* Fix user info not always being picked up on User login action.
-* Fix 0 being logged for username when not logged in.
-* Fixed duplicate logs being recorded when Updating a post in Gutenberg.
+  * Fix user info not always being picked up on User login action.
+  * Fix 0 being logged for username when not logged in.
+  * Fixed duplicate logs being recorded when Updating a post in Gutenberg.
 
 = 1.3.0 =
-* Added revision link to Post Updated logs.
-* Added Role to Content parameter for User Logged In and User Logged Out.
+  * Added revision link to Post Updated logs.
+  * Added Role to Content parameter for User Logged In and User Logged Out.
 
 = 1.2.0 =
-* Added context parameter to API calls to separate out Actions from Titles.
+  * Added context parameter to API calls to separate out Actions from Titles.
 
 = 1.1.0 =
-* Add logging when updating menus.
-* Add logging when updating widgets.
-* Fix spelling mistake in postPermanentlyDeleted method.
+  * Add logging when updating menus.
+  * Add logging when updating widgets.
+  * Fix spelling mistake in postPermanentlyDeleted method.
 
 = 1.0 =
-* Fix php warning when tracking a logout event.
+  * Fix php warning when tracking a logout event.

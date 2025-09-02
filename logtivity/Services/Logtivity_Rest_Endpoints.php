@@ -45,7 +45,17 @@ class Logtivity_Rest_Endpoints
                         return $this->verifyAuthorization($request->get_header('Authorization'));
                     },
                     'callback'            => function () {
-                        return (new Logtivity_Options())->getOptions();
+                        $options = new Logtivity_Options();
+
+                        $response = $options->getOptions();
+
+                        $lastCheckinOption = 'logtivity_last_settings_check_in_at';
+
+                        $response[$lastCheckinOption] = get_option($lastCheckinOption);
+                        $response[$lastCheckinOption] = $response[$lastCheckinOption]['date'] ?? null;
+                        $response['logtivity_checkin_delay'] = $options->checkinDelay;
+
+                        return $response;
                     },
                 ]);
         });
@@ -65,9 +75,8 @@ class Logtivity_Rest_Endpoints
 
                     $payload = $this->parseToken($keys[1], $apikey);
 
-                    $issuer = rtrim($payload->iss ?? '', '/');
-                    $appUrl = rtrim(logtivity_get_app_url(), '/');
-                    if ($issuer != $appUrl) {
+                    $issuer = $payload->iss ?? '';
+                    if ($this->compareDomains($issuer, logtivity_get_app_url()) == false) {
                         throw new Exception(
                             sprintf(
                                 'Request Source: %s',
@@ -76,9 +85,8 @@ class Logtivity_Rest_Endpoints
                         );
                     }
 
-                    $audience = rtrim($payload->aud ?? '', '/');
-                    $siteUrl  = rtrim(site_url(), '/');
-                    if ($audience != $siteUrl) {
+                    $audience = $payload->aud ?? '';
+                    if ($this->compareDomains($audience, site_url()) == false) {
                         throw new Exception(
                             sprintf(
                                 'Target Site: %s',
@@ -113,6 +121,24 @@ class Logtivity_Rest_Endpoints
         }
 
         return $this->token->parse($token, $secret);
+    }
+
+    /**
+     * @param string $urlLeft
+     * @param string $urlRight
+     *
+     * @return bool
+     */
+    protected function compareDomains(string $urlLeft, string $urlRight): bool
+    {
+        if (
+            preg_match('#^(?:https?://)?(\S*?)/?$#', $urlLeft, $left)
+            && preg_match('#^(?:https?://)?(\S*?)/?$#', $urlRight, $right)
+        ) {
+            return $left[1] == $right[1];
+        }
+
+        return false;
     }
 }
 

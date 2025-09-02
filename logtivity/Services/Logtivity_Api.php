@@ -100,20 +100,19 @@ class Logtivity_Api
      *
      * @return ?array
      */
-    public function makeRequest(string $url, ?array $body = null, string $method = 'POST'): ?array
+    public function makeRequest(string $url, ?array $body = [], string $method = 'POST'): ?array
     {
+        $body = $body ?: [];
+
+        $body['occurred_at'] = time();
+
         if ($this->options->urlHash() == false) {
             $this->options->update(['logtivity_url_hash' => md5(home_url())], false);
         }
 
         if ($this->ready()) {
             if ($this->getOption('logtivity_app_verify_url')) {
-                $body = array_merge(
-                    $body ?: [],
-                    [
-                        'site_hash' => $this->options->urlHash(),
-                    ]
-                );
+                $body['site_hash'] = $this->options->urlHash();
             }
 
             $waitForResponse = $this->waitForResponse || $this->options->shouldLogLatestResponse();
@@ -277,7 +276,7 @@ class Logtivity_Api
     }
 
     /**
-     * @param array|object $body
+     * @param array $settings
      *
      * @return void
      */
@@ -329,12 +328,43 @@ class Logtivity_Api
     }
 
     /**
+     * @return ?Exception
+     */
+    public function getLastError(): ?Exception
+    {
+        $latestResponse = $this->getLatestResponse();
+
+        $code = $latestResponse['code'] ?? null;
+
+        if ($code >= 400 && isset($latestResponse['body']['message'])) {
+            $message = $latestResponse['body']['message'];
+
+        } elseif (isset($latestResponse['body']['errors'])) {
+            $message = array_shift($latestResponse['body']['errors']);
+            while (is_array($message)) {
+                $message = array_shift($message);
+            }
+
+        } elseif (isset($latestResponse['body']['error'])) {
+            $message = $latestResponse['body']['error'];
+        } else {
+            $message = $latestResponse['error'] ?? $latestResponse['message'] ?? 'Unknown error';
+        }
+
+        if (($code == false || $message == false) && $this->getApiKey()) {
+            $message = 'Not connected. Please check API Key';
+        }
+
+        return new Exception($message, $code);
+    }
+
+    /**
      * @param string $url
      * @param ?array $body
      *
      * @return ?array
      */
-    public function get(string $url, ?array $body = null): ?array
+    public function get(string $url, ?array $body = []): ?array
     {
         return $this->waitForResponse()->makeRequest($url, $body, 'GET');
     }
@@ -350,6 +380,8 @@ class Logtivity_Api
     }
 
     /**
+     * @TODO: This method is duplicated in the App.
+     *
      * @return ?string
      */
     public function getConnectionMessage(): ?string
@@ -362,28 +394,19 @@ class Logtivity_Api
                 break;
 
             case 'paused':
-                $message = $this->getLatestResponse()['body']['error'] ?? null;
-                break;
-
             case 'fail':
-                $error   = $this->getLatestResponse();
-                $code    = $error['code'] ?? null;
-                $message = $error['error'] ?? $error['message'] ?? null;
-
-                if ($code && $message) {
-                    $message = sprintf('Disconnected (%s - %s)', $code, $message);
-                } else {
-                    $message = 'Not connected. Please check API Key';
-                }
-
+                $error   = $this->getLastError();
+                $message = $error
+                    ? sprintf('Disconnected (%s - %s)', $error->getCode(), $error->getMessage())
+                    : null;
                 break;
 
             default:
-                $message = $this->getApiKey() ? 'Unknown error' : 'API Key has not been set';
+                $message = $this->getApiKey() ? null : 'API Key has not been set';
                 break;
         }
 
-        return $message;
+        return $message ?: 'Unknown Status';
     }
 
     /**

@@ -28,11 +28,11 @@
 class Logtivity_Options
 {
     /**
-     * Checkin for settings updates in designated minutes
+     * Checkin for settings updates in designated seconds
      *
      * @var int
      */
-    protected int $checkinDelay = 10;
+    public int $checkinDelay = 10 * MINUTE_IN_SECONDS;
 
     /**
      * The option keys that we can save to the options table
@@ -181,7 +181,7 @@ class Logtivity_Options
             $lastCheckin = $lastCheckin['date'] ?? null;
 
             if ($lastCheckin) {
-                return time() - strtotime($lastCheckin) > ($this->checkinDelay * MINUTE_IN_SECONDS);
+                return time() - strtotime($lastCheckin) > $this->checkinDelay;
             }
         }
 

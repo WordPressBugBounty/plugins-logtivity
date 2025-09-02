@@ -67,14 +67,14 @@ class Logtivity_JsonWebToken
     {
         $atoms = explode('.', $token);
         if (count($atoms) != 3) {
-            throw new Exception('Invalid JWT token');
+            throw new Exception('Invalid JWT Token');
 
         } else {
             [$header64, $payload64, $signature64] = $atoms;
 
             $signature = $this->base64Decode($signature64);
             if (!$signature) {
-                throw new Exception('Invalid signature');
+                throw new Exception('Invalid JWT Signature');
 
             } elseif ($payloadJson = $this->base64Decode($payload64)) {
                 $hash = hash_hmac($this->algorithm, "{$header64}.{$payload64}", $secret, true);
@@ -87,10 +87,10 @@ class Logtivity_JsonWebToken
                     return $payload;
 
                 } else {
-                    throw new Exception('invalid token');
+                    throw new Exception('Invalid JWT Token');
                 }
             } else {
-                throw new Exception('invalid payload');
+                throw new Exception('Invalid JWT Payload');
             }
         }
     }
@@ -109,7 +109,7 @@ class Logtivity_JsonWebToken
             return $this;
         }
 
-        throw new Exception('Invalid hash algorithm');
+        throw new Exception('Invalid Hash Algorithm');
     }
 
     /**
