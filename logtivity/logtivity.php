@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.2.1
+ * Version:           3.3.0
  * Text Domain:       logtivity
  * Requires at least: 4.7
  * Requires PHP:      7.4
@@ -44,94 +44,28 @@ class Logtivity
     /**
      * @var string
      */
-    protected string $version = '3.2.1';
+    protected string $version = '3.3.0';
 
     /**
-     * List all classes here with their file paths. Keep class names the same as filenames.
-     * Ordering of this list matters!
-     * @TODO: Implement psr-0 autoloading
-     *
-     * @var string[]
-     */
-    private array $dependencies = [
-        'Helpers/Compatibility',
-        'Helpers/Helpers',
-        'Helpers/Logtivity_Wp_User',
-        'Admin/Logtivity_Log_Index_Controller',
-        'Admin/Logtivity_Dismiss_Notice_Controller',
-        'Admin/Logtivity_Options',
-        'Admin/Logtivity_Response',
-        'Admin/Logtivity_Admin',
-        'Services/Logtivity_User_Logger_Trait',
-        'Services/Logtivity_Api',
-        'Services/Logtivity_Logger',
-        'Services/Logtivity_Register_Site',
-        'Helpers/Logtivity_Log_Global_Function',
-        'Logs/Logtivity_Abstract_Logger',
-        'Services/Logtivity_Check_For_Disabled_Individual_Logs',
-        'Services/Logtivity_Check_For_New_Settings',
-        'Services/Logtivity_Rest_Endpoints',
-        /**
-         * Error logging
-         */
-        'Errors/Logtivity_Stack_Trace_Snippet',
-        'Errors/Logtivity_Stack_Trace',
-        'Errors/Logtivity_Error_Logger',
-        'Errors/Logtivity_Error_Log',
-    ];
-    /**
-     * @var string[]
-     */
-    private array $logClasses = [
-        /**
-         * Activity logging
-         */
-        'Logs/Core/Logtivity_Post',
-        'Logs/Core/Logtivity_User',
-        'Logs/Core/Logtivity_Core',
-        'Logs/Core/Logtivity_Theme',
-        'Logs/Core/Logtivity_Plugin',
-        'Logs/Core/Logtivity_Comment',
-        'Logs/Core/Logtivity_Term',
-        'Logs/Core/Logtivity_Meta',
-    ];
-    /**
-     * List all integration dependencies
+     * Integrations with other plugins
      *
      * @var array[]
      */
-    private array $integrationDependencies = [
-        'WP_DLM'                 => [
-            'Logs/Download_Monitor/Logtivity_Download_Monitor',
-        ],
-        'MeprCtrlFactory'        => [
-            'Logs/Memberpress/Logtivity_Memberpress',
-        ],
-        'Easy_Digital_Downloads' => [
-            'Logs/Easy_Digital_Downloads/Logtivity_Abstract_Easy_Digital_Downloads',
-            'Logs/Easy_Digital_Downloads/Logtivity_Easy_Digital_Downloads',
-        ],
-        'EDD_Software_Licensing' => [
-            'Logs/Easy_Digital_Downloads/Logtivity_Easy_Digital_Downloads_Software_Licensing',
-        ],
-        'EDD_Recurring'          => [
-            'Logs/Easy_Digital_Downloads/Logtivity_Easy_Digital_Downloads_Recurring',
-        ],
-        'FrmHooksController'     => [
-            'Logs/Formidable/Logtivity_FrmEntryFormatter',
-            'Logs/Formidable/Logtivity_Formidable',
-        ],
-        'PMXI_Plugin'            => [
-            'Logs/WP_All_Import/Logtivity_WP_All_Import',
-        ],
-        '\Code_Snippets\Plugin'  => [
-            'Logs/Code_Snippets/Logtivity_Code_Snippets',
-        ],
+    private array $integrations = [
+        WP_DLM::class                 => 'Download_Monitor',
+        MeprCtrlFactory::class        => 'Memberpress',
+        Easy_Digital_Downloads::class => 'Easy_Digital_Downloads',
+        EDD_Software_Licensing::class => 'Easy_Digital_Downloads/Licensing',
+        EDD_Recurring::class          => 'Easy_Digital_Downloads/Recurring',
+        FrmHooksController::class     => 'Formidable',
+        PMXI_Plugin::class            => 'WP_All_Import',
+        \Code_Snippets\Plugin::class  => 'Code_Snippets',
     ];
 
     public function __construct()
     {
-        $this->loadDependencies();
+        $this->loadCore();
+        $this->activateLoggers();
 
         add_action('upgrader_process_complete', [$this, 'upgradeProcessComplete'], 10, 2);
         add_action('activated_plugin', [$this, 'setLogtivityToLoadFirst']);
@@ -146,35 +80,83 @@ class Logtivity
     }
 
     /**
-     * @return void
+     * @return self
      */
-    public function loadDependencies(): void
+    public static function init(): self
     {
-        foreach ($this->dependencies as $filePath) {
-            $this->loadFile($filePath);
-        }
-
-        add_action('plugins_loaded', function () {
-            $this->updateCheck();
-
-            if ($this->defaultLoggingDisabled()) {
-                return;
-            }
-
-            $this->maybeLoadLogClasses();
-
-            $this->loadIntegrationDependencies();
-        });
+        return new static();
     }
 
     /**
-     * @param string $filePath
-     *
      * @return void
      */
-    public function loadFile(string $filePath): void
+    protected function loadCore(): void
     {
-        require_once plugin_dir_path(__FILE__) . $filePath . '.php';
+        $requires = array_merge(
+            $this->getFiles(__DIR__ . '/functions'),
+            $this->getFiles(__DIR__ . '/Base')
+        );
+        foreach ($requires as $file) {
+            require_once $file;
+        }
+
+        $coreFiles   = $this->getFiles(__DIR__ . '/Core');
+        $initClasses = [];
+        foreach ($coreFiles as $file) {
+            require_once $file;
+            $className = basename($file, '.php');
+            if (is_callable([$className, 'init'])) {
+                $initClasses[] = $className;
+            }
+        }
+        foreach ($initClasses as $class) {
+            call_user_func([$class, 'init']);
+        }
+    }
+
+    protected function activateLoggers(): void
+    {
+        add_action('plugins_loaded', function () {
+            $this->updateCheck();
+
+            if ($this->defaultLoggingDisabled() == false) {
+                $this->loadCoreLoggers();
+                $this->loadIntegrations();
+            }
+        });
+
+    }
+
+    /**
+     * @param string $path
+     * @param bool   $recurse
+     * @param string $extension
+     *
+     * @return array
+     */
+    protected function getFiles(string $path, bool $recurse = true, string $extension = 'php'): array
+    {
+        if (is_dir($path)) {
+            $files = new RecursiveDirectoryIterator($path, RecursiveDirectoryIterator::SKIP_DOTS);
+        } elseif (is_file($path)) {
+            return [realpath($path)];
+        } else {
+            return [];
+        }
+
+        $list = [];
+        foreach ($files as $file) {
+            if ($file->isFile()) {
+                if ($file->getExtension() == $extension) {
+                    $list[] = $file->getRealPath();
+                }
+
+            } elseif ($recurse) {
+                $list = array_merge($list, $this->getFiles($file->getRealPath(), $recurse, $extension));
+            }
+        }
+
+        return $list;
     }
 
     /**
@@ -187,7 +169,7 @@ class Logtivity
         $currentVersion = get_option('logtivity_version');
 
         if (version_compare($currentVersion, '3.1.6', '<=')) {
-            static::checkCapabilities();
+            $this->checkCapabilities();
         }
 
         if ($currentVersion && version_compare($currentVersion, '3.1.7', '<=')) {
@@ -203,7 +185,7 @@ class Logtivity
      *
      * @return void
      */
-    public static function checkCapabilities(): void
+    protected function checkCapabilities(): void
     {
         $capabilities = array_filter(
             array_keys(logtivity_get_capabilities()),
@@ -230,7 +212,7 @@ class Logtivity
      *
      * @return bool
      */
-    public function defaultLoggingDisabled(): bool
+    protected function defaultLoggingDisabled(): bool
     {
         return (bool)(new Logtivity_Options())->getOption('logtivity_disable_default_logging');
     }
@@ -238,22 +220,35 @@ class Logtivity
     /**
      * @return void
      */
-    public function maybeLoadLogClasses(): void
+    protected function loadCoreLoggers(): void
     {
-        foreach ($this->logClasses as $filePath) {
-            $this->loadFile($filePath);
+        $coreLoggers = $this->getFiles(__DIR__ . '/Loggers/Core');
+        foreach ($coreLoggers as $logger) {
+            require_once $logger;
         }
     }
 
     /**
      * @return void
      */
-    public function loadIntegrationDependencies(): void
+    protected function loadIntegrations(): void
     {
-        foreach ($this->integrationDependencies as $key => $value) {
+        $loggerFolder = __DIR__ . '/Loggers/';
+
+        foreach ($this->integrations as $key => $folder) {
+            $integrationFolder = $loggerFolder . $folder;
             if (class_exists($key)) {
-                foreach ($value as $filePath) {
-                    $this->loadFile($filePath);
+                if (is_dir($integrationFolder . '/Base')) {
+                    // Load any base classes
+                    $baseFiles = $this->getFiles($integrationFolder . '/Base');
+                    foreach ($baseFiles as $file) {
+                        require_once $file;
+                    }
+                }
+
+                $files = $this->getFiles($integrationFolder, false);
+                foreach ($files as $file) {
+                    require_once $file;
                 }
             }
         }
@@ -419,7 +414,7 @@ class Logtivity
     {
         add_option('logtivity_activate', true);
 
-        static::checkCapabilities();
+        $this->checkCapabilities();
 
         if (apply_filters('logtivity_hide_settings_page', false)) {
             return;
@@ -500,4 +495,4 @@ class Logtivity
     }
 }
 
-new Logtivity();
+Logtivity::init();
