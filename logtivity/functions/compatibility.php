@@ -23,3 +23,16 @@ if (function_exists('array_is_list') == false) {
     }
 }
 
+if (function_exists('get_user') == false) {
+    /**
+     * Compatibility with WP 6.6
+     * See v6.7 of wp-includes/user.php
+     *
+     * @param int $user_id User ID.
+     *
+     * @return WP_User|false WP_User object on success, false on failure.
+     */
+    function get_user( $user_id ) {
+        return get_user_by( 'id', $user_id );
+    }
+}

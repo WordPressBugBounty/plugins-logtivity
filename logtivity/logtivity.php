@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.3.0
+ * Version:           3.3.6
  * Text Domain:       logtivity
  * Requires at least: 4.7
  * Requires PHP:      7.4
@@ -44,14 +44,14 @@ class Logtivity
     /**
      * @var string
      */
-    protected string $version = '3.3.0';
+    protected string $version = '3.3.6';
 
     /**
      * Integrations with other plugins
      *
      * @var array[]
      */
-    private array $integrations = [
+    protected array $integrations = [
         WP_DLM::class                 => 'Download_Monitor',
         MeprCtrlFactory::class        => 'Memberpress',
         Easy_Digital_Downloads::class => 'Easy_Digital_Downloads',
@@ -61,6 +61,11 @@ class Logtivity
         PMXI_Plugin::class            => 'WP_All_Import',
         \Code_Snippets\Plugin::class  => 'Code_Snippets',
     ];
+
+    /**
+     * @var bool
+     */
+    protected bool $coreLoaded = false;
 
     public function __construct()
     {
@@ -72,7 +77,7 @@ class Logtivity
         add_action('admin_notices', [$this, 'welcomeMessage']);
         add_action('admin_notices', [$this, 'checkForSiteUrlChange']);
         add_action('admin_enqueue_scripts', [$this, 'loadScripts']);
-        add_action('admin_init', [$this, 'redirect_on_activate']);
+        add_action('admin_init', [$this, 'redirectOnActivate']);
 
         add_filter('plugin_action_links_' . plugin_basename(__FILE__), [$this, 'addSettingsLinkFromPluginsPage']);
 
@@ -92,31 +97,39 @@ class Logtivity
      */
     protected function loadCore(): void
     {
-        $requires = array_merge(
-            $this->getFiles(__DIR__ . '/functions'),
-            $this->getFiles(__DIR__ . '/Base')
-        );
-        foreach ($requires as $file) {
-            require_once $file;
-        }
-
-        $coreFiles   = $this->getFiles(__DIR__ . '/Core');
-        $initClasses = [];
-        foreach ($coreFiles as $file) {
-            require_once $file;
-            $className = basename($file, '.php');
-            if (is_callable([$className, 'init'])) {
-                $initClasses[] = $className;
+        if ($this->coreLoaded == false) {
+            $requires = array_merge(
+                $this->getFiles(__DIR__ . '/functions'),
+                $this->getFiles(__DIR__ . '/Base')
+            );
+            foreach ($requires as $file) {
+                require_once $file;
             }
-        }
-        foreach ($initClasses as $class) {
-            call_user_func([$class, 'init']);
+
+            $coreFiles   = $this->getFiles(__DIR__ . '/Core');
+            $initClasses = [];
+            foreach ($coreFiles as $file) {
+                require_once $file;
+                $className = basename($file, '.php');
+                if (is_callable([$className, 'init'])) {
+                    $initClasses[] = $className;
+                }
+            }
+            foreach ($initClasses as $class) {
+                call_user_func([$class, 'init']);
+            }
+
+            $this->coreLoaded = true;
         }
     }
 
+    /**
+     * @return void
+     */
     protected function activateLoggers(): void
     {
         add_action('plugins_loaded', function () {
+            $this->loadCore();
             $this->updateCheck();
 
             if ($this->defaultLoggingDisabled() == false) {
@@ -194,15 +207,13 @@ class Logtivity
             }
         );
 
-        if ($capabilities == false) {
-            // Make sure at least admins can access us
-            if ($role = get_role('administrator')) {
-                if ($role->has_cap(Logtivity::ACCESS_LOGS) == false) {
-                    $role->add_cap(Logtivity::ACCESS_LOGS);
-                }
-                if ($role->has_cap(Logtivity::ACCESS_SETTINGS) == false) {
-                    $role->add_cap(Logtivity::ACCESS_SETTINGS);
-                }
+        if ($administrator = get_role('administrator')) {
+            if (array_search(Logtivity::ACCESS_LOGS, $capabilities) === false) {
+                $administrator->add_cap(Logtivity::ACCESS_LOGS);
+            }
+
+            if (array_search(Logtivity::ACCESS_SETTINGS, $capabilities) === false) {
+                $administrator->add_cap(Logtivity::ACCESS_SETTINGS);
             }
         }
     }
@@ -430,13 +441,14 @@ class Logtivity
      * @since 3.1.11
      *
      */
-    public function redirect_on_activate()
+    public function redirectOnActivate()
     {
         if (get_option('logtivity_activate')) {
             delete_option('logtivity_activate');
 
             if (!isset($_GET['activate-multi'])) {
-                wp_redirect(admin_url('admin.php?page=logtivity'));
+                $page = (new Logtivity_Options())->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity';
+                wp_redirect(admin_url('admin.php?page=' . $page));
                 exit;
             }
         }

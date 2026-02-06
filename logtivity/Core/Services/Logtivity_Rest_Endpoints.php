@@ -54,6 +54,7 @@ class Logtivity_Rest_Endpoints
                         $response[$lastCheckinOption]        = get_option($lastCheckinOption);
                         $response[$lastCheckinOption]        = $response[$lastCheckinOption]['date'] ?? null;
                         $response['logtivity_checkin_delay'] = $options->checkinDelay;
+                        $response['version']                 = $this->getLogtivityVersion();
 
                         return $response;
                     },
@@ -80,7 +81,6 @@ class Logtivity_Rest_Endpoints
             try {
                 $keys = explode(' ', $authHeader);
                 if (count($keys) == 2 && $keys[0] == 'Bearer') {
-
                     $payload = $this->parseToken($keys[1], $apikey);
 
                     $issuer = $payload->iss ?? '';
@@ -147,5 +147,19 @@ class Logtivity_Rest_Endpoints
         }
 
         return false;
+    }
+
+    /**
+     * @return string
+     */
+    protected function getLogtivityVersion(): string
+    {
+        $path = WP_PLUGIN_DIR . '/logtivity/logtivity.php';
+        if (is_file($path)) {
+            $pluginData = get_plugin_data($path);
+            $version    = $pluginData['Version'] ?? 'Unknown';
+        }
+
+        return $version ?? 'Logtivity not available';
     }
 }

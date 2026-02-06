@@ -82,11 +82,11 @@ if (function_exists('logtivity_dd') == false) {
      */
     function logtivity_get_the_title(int $postId): string
     {
-        $wptexturize = remove_filter('the_title', 'wptexturize');
+        $wpTexturize = remove_filter('the_title', 'wptexturize');
 
         $title = get_the_title($postId);
 
-        if ($wptexturize) {
+        if ($wpTexturize) {
             add_filter('the_title', 'wptexturize');
         }
 
@@ -147,6 +147,22 @@ if (function_exists('logtivity_dd') == false) {
     }
 
     /**
+     * @param array $array
+     *
+     * @return bool
+     */
+    function logtivity_is_associative(array $array): bool
+    {
+        foreach ($array as $key => $value) {
+            if (is_string($key)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Get all known capabilities
      *
      * @return array
@@ -161,5 +177,61 @@ if (function_exists('logtivity_dd') == false) {
         }
 
         return $capabilities;
+    }
+
+    /**
+     * @param string $label
+     *
+     * @return string
+     */
+    function logtivity_logger_label(string $label): string
+    {
+        global $wpdb;
+
+        return ucwords(
+            str_replace(
+                ['_', '-'], ' ',
+                str_replace($wpdb->get_blog_prefix(), '', $label)
+            )
+        );
+    }
+
+    /**
+     * @param mixed $value
+     *
+     * @return string
+     */
+    function logtivity_logger_value($value): string
+    {
+        $value = is_string($value) ? maybe_unserialize($value) : $value;
+
+        switch (gettype($value)) {
+            case 'NULL':
+                return 'NULL';
+
+            case 'object':
+                $value = get_object_vars($value);
+            // fall through to array type
+            case 'array':
+                return print_r($value, true);
+
+            case 'boolean':
+                return $value ? 'True' : 'False';
+
+            default:
+                return empty($value) ? '[Empty]' : $value;
+        }
+    }
+
+    /**
+     * @param string $time
+     *
+     * @return string
+     */
+    function logtivity_datetime(string $time): string
+    {
+        $format = get_option('date_format') . ' ' . get_option('time_format');
+
+        return get_date_from_gmt($time, $format);
     }
 }

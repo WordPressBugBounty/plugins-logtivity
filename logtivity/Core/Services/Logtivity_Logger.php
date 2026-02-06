@@ -100,10 +100,9 @@ class Logtivity_Logger extends Logtivity_Api
             $value = $meta['value'] ?? null;
             if ($key && $value) {
                 $meta = [$key => $value];
-
             }
 
-            if (array_is_list($meta) == false) {
+            if (logtivity_is_associative($meta)) {
                 // Associative array of keys and values
                 foreach ($meta as $key => $value) {
                     $logtivityLogger->addMeta($key, $value);
@@ -121,7 +120,7 @@ class Logtivity_Logger extends Logtivity_Api
      */
     public function setAction(string $action): self
     {
-        $this->action = $action;
+        $this->action = ucfirst(str_replace(['-', '_'], ' ', strtolower(trim($action))));
 
         return $this;
     }
@@ -171,8 +170,8 @@ class Logtivity_Logger extends Logtivity_Api
     public function addMeta(string $key, $value): self
     {
         $this->meta[] = [
-            'key'   => $key,
-            'value' => $value,
+            'key'   => logtivity_logger_label($key),
+            'value' => logtivity_logger_value($value),
         ];
 
         return $this;
@@ -188,7 +187,7 @@ class Logtivity_Logger extends Logtivity_Api
     {
         if ($key) {
             $title   = str_pad(' ' . $key . ' ', strlen($key) + 8, '*', STR_PAD_BOTH);
-            $comment = str_pad(count($values), strlen($key) + 8, '*', STR_PAD_BOTH);
+            $comment = str_pad(' ' . count($values) . ' ', strlen($key) + 8, '*', STR_PAD_BOTH);
             $this->addMeta($title, $comment);
         }
 
@@ -200,17 +199,17 @@ class Logtivity_Logger extends Logtivity_Api
     }
 
     /**
-     * @param array            $oldValues
-     * @param array            $newValues
+     * @param array $oldValues
+     * @param array $newValues
      *
      * @return $this
      */
-    public function addMetaChanged(array $oldValues, array $newValues): self
+    public function addMetaChanges(array $oldValues, array $newValues): self
     {
         $keys = array_unique(array_merge(array_keys($oldValues), array_keys($newValues)));
         foreach ($keys as $key) {
-            $value    = $newValues[$key] ?? 'NULL';
-            $oldValue = $oldValues[$key] ?? 'NULL';
+            $value    = logtivity_logger_value($newValues[$key] ?? null);
+            $oldValue = logtivity_logger_value($oldValues[$key] ?? null);
             if ($value != $oldValue) {
                 $this->addMeta($key, sprintf('%s => %s', $oldValue, $value));
             }

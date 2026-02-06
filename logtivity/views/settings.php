@@ -70,7 +70,7 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_site_api_key"
                                name="logtivity_site_api_key"
                                type="text"
-                            <?php echo has_filter('logtivity_site_api_key') ? 'readonly' : ''; ?>
+                                <?php echo has_filter('logtivity_site_api_key') ? 'readonly' : ''; ?>
                                value="<?php echo sanitize_text_field($apiKey); ?>"
                                class="regular-text">
                         <p>
@@ -84,6 +84,10 @@ echo logtivity_view('_admin-header', compact('options'));
                                 case 'paused':
                                     echo '<span style="color: #dbbf24; font-weight: bold;">Logging is paused</span>';
                                     echo '<br>' . $api->getConnectionMessage();
+                                    break;
+
+                                case 'staging':
+                                    echo '<span style="color: #dbbf24; font-weight: bold;">' . $api->getConnectionMessage() . '</span>';
                                     break;
 
                                 case 'fail':
@@ -127,8 +131,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_should_store_user_id"
                                name="logtivity_should_store_user_id"
                                type="checkbox"
-                            <?php echo($options['logtivity_should_store_user_id'] ? 'checked' : ''); ?>
-                            <?php echo(has_filter('logtivity_should_store_user_id') ? 'readonly' : ''); ?>
+                                <?php echo $options['logtivity_should_store_user_id'] ? 'checked' : ''; ?>
+                                <?php echo has_filter('logtivity_should_store_user_id') ? 'readonly' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -158,8 +162,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_should_log_profile_link"
                                name="logtivity_should_log_profile_link"
                                type="checkbox"
-                            <?php echo $options['logtivity_should_log_profile_link'] ? 'checked' : ''; ?>
-                            <?php echo has_filter('logtivity_should_log_profile_link') ? 'readonly' : ''; ?>
+                                <?php echo $options['logtivity_should_log_profile_link'] ? 'checked' : ''; ?>
+                                <?php echo has_filter('logtivity_should_log_profile_link') ? 'readonly' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -189,8 +193,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_should_log_username"
                                name="logtivity_should_log_username"
                                type="checkbox"
-                            <?php echo has_filter('logtivity_should_log_username') ? 'readonly' : ''; ?>
-                            <?php echo $options['logtivity_should_log_username'] ? 'checked' : ''; ?>
+                                <?php echo has_filter('logtivity_should_log_username') ? 'readonly' : ''; ?>
+                                <?php echo $options['logtivity_should_log_username'] ? 'checked' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -220,8 +224,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_should_store_ip"
                                name="logtivity_should_store_ip"
                                type="checkbox"
-                            <?php echo $options['logtivity_should_store_ip'] ? 'checked' : ''; ?>
-                            <?php echo has_filter('logtivity_should_store_ip') ? 'readonly' : ''; ?>
+                                <?php echo $options['logtivity_should_store_ip'] ? 'checked' : ''; ?>
+                                <?php echo has_filter('logtivity_should_store_ip') ? 'readonly' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -253,8 +257,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_app_verify_url"
                                name="logtivity_app_verify_url"
                                type="checkbox"
-                            <?php echo $options['logtivity_app_verify_url'] ? 'checked' : ''; ?>
-                            <?php echo has_filter('logtivity_app_verify_url') ? 'readonly' : ''; ?>
+                                <?php echo $options['logtivity_app_verify_url'] ? 'checked' : ''; ?>
+                                <?php echo has_filter('logtivity_app_verify_url') ? 'readonly' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -287,8 +291,8 @@ echo logtivity_view('_admin-header', compact('options'));
                         <input id="logtivity_enable_debug_mode"
                                name="logtivity_enable_debug_mode"
                                type="checkbox"
-                            <?php echo $options['logtivity_enable_debug_mode'] ? 'checked' : ''; ?>
-                            <?php echo has_filter('logtivity_enable_debug_mode') ? 'readonly' : ''; ?>
+                                <?php echo $options['logtivity_enable_debug_mode'] ? 'checked' : ''; ?>
+                                <?php echo has_filter('logtivity_enable_debug_mode') ? 'readonly' : ''; ?>
                                value="1"
                                class="regular-checkbox">
                     </td>
@@ -333,17 +337,17 @@ echo logtivity_view('_admin-header', compact('options'));
                                 <br>
 								<?php
                                 if (
-                                    isset($options['logtivity_enable_white_label_mode']) == false
-                                    || $options['logtivity_enable_white_label_mode'] != 1
+                                        isset($options['logtivity_enable_white_label_mode']) == false
+                                        || $options['logtivity_enable_white_label_mode'] != 1
                                 ):
                                     ?>
                                     If you have multiple sites on Logtivity and would rather control disabled
                                     logs globally you can go to the
                                     <?php
                                     echo sprintf(
-                                        '<a href="%s" target="_blank" rel="nofollow">%s</a>',
-                                        logtivity_get_app_url() . '/team-settings/activity-log-settings',
-                                        'Activity Log Settings page'
+                                            '<a href="%s" target="_blank" rel="nofollow">%s</a>',
+                                            logtivity_get_app_url() . '/team-settings/activity-log-settings',
+                                            'Activity Log Settings page'
                                     );
                                     ?>
                                     in your Logtivity dashboard.

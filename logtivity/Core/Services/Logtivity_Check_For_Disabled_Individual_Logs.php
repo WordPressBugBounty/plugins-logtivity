@@ -31,7 +31,7 @@ class Logtivity_Check_For_Disabled_Individual_Logs
 
     public function __construct()
     {
-        add_action('wp_logtivity_instance', [$this, 'handle'], 10, 2);
+        add_action('wp_logtivity_instance', [$this, 'handle'], 10, 1);
     }
 
     /**

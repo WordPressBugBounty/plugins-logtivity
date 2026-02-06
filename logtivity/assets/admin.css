@@ -386,9 +386,3 @@ body[class*="_page_lgtvy-logs"] #postbox-container-1 .inside ul {
     margin-top: 109px;
   }
 }
-
-@media (min-width: 783px) {
-  .logtivity-table td {
-    width: 20%;
-  }
-}

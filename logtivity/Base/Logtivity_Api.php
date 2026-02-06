@@ -400,6 +400,10 @@ class Logtivity_Api
                     : null;
                 break;
 
+            case 'staging':
+                $message = 'Connection disabled. Site url has changed.';
+                break;
+
             default:
                 $message = $this->getApiKey() ? null : 'API Key has not been set';
                 break;
@@ -413,13 +417,10 @@ class Logtivity_Api
      */
     public function getConnectionStatus(): ?string
     {
-        $status = null;
-        $apiKey = $this->getApiKey();
-
-        if ($apiKey) {
-            $status = $this->getOption('logtivity_api_key_check');
+        if (logtivity_has_site_url_changed()) {
+            return 'staging';
         }
 
-        return $status;
+        return $this->getApiKey() ? $this->getOption('logtivity_api_key_check') : null;
     }
 }

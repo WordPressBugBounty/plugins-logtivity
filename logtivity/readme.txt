@@ -4,7 +4,7 @@ Contributors: logtivity, stevejburge
 Tags: activity log, error logs, event monitoring, user activity, error log, activity logs, logs, log data, site activities, site events
 Requires at least: 6.6
 Tested up to: 6.8
-Stable tag: 3.3.0
+Stable tag: 3.3.6
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -261,6 +261,35 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 * Log tivity, loggtivity, logg tivity (all incorrect)
 
 == Changelog ==
+
+= 3.3.6 =
+  * Include plugin version number in api responses
+  * Stricter consistency with action texts
+  * Fix: Exceptions were never being logged
+
+= 3.3.5 25 Nov 2025 =
+  * Pay attention to filtering out separate post meta logs
+
+= 3.3.4 10 Nov 2025 =
+  * Fix: "Nesting Level" error on Woo Commerce option updates
+
+= 3.3.3 - 03 Nov 2025 =
+  * Display log times using General Settings
+  * Fix: Bulk user updates can cause WSOD
+  * Fix: WSOD with more complicated arrays
+  * Fix: Sometimes post id doesn't exist
+  * Fix: EDD Logger unable to handle empty customer name
+  * Fix: Handle no previous post information
+
+= 3.3.2 - 22 Oct 2025 =
+  * Remove separate post-meta logger
+  * Consolidate all post logging to single entries
+  * Provide more consistent display of field keys and values
+  * Prevent permissions error on activation with leftover settings
+  * FIX: WSOD on older versions of WordPress
+
+= 3.3.1 - 07 Oct 2025 =
+  * Fix WSOD on some cached sites
 
 = 3.3.0 - 25 Sep 2025 =
   * Provide more detailed information for term updates

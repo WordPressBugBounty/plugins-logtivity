@@ -196,9 +196,12 @@ class Logtivity_Error_Log
 
                 return false;
             }
+
+            return true;
         }
 
-        return true;
+        // Exceptions are not rate limited
+        return false;
     }
 
     /**

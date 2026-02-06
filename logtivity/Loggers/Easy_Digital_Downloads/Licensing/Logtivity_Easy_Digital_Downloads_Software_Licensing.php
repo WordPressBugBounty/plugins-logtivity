@@ -251,7 +251,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
      */
     public function siteDeactivated()
     {
-        if (!wp_verify_nonce($_GET['_wpnonce'], 'edd_deactivate_site_nonce')) {
+        if (!wp_verify_nonce($_GET['_wpnonce'] ?? null, 'edd_deactivate_site_nonce')) {
             return;
         }
 

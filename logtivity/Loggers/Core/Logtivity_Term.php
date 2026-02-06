@@ -88,8 +88,8 @@ class Logtivity_Term extends Logtivity_Abstract_Logger
             $term    = $term ?: [];
             $oldTerm = $this->terms[$termId] ?? [];
 
-            $meta    = $this->getMetadata('term', $termId);
-            $oldMeta = $this->metas[$termId] ?? [];
+            $meta    = $this->sanitizeDataFields($this->getMetadata('term', $termId));
+            $oldMeta = $this->sanitizeDataFields($this->metas[$termId] ?? []);
 
             if ($term != $oldTerm || $meta != $oldMeta) {
                 Logtivity::log('Term ' . ($update ? 'Updated' : 'Created'))
@@ -98,8 +98,8 @@ class Logtivity_Term extends Logtivity_Abstract_Logger
                     ->addMeta('Name', $term['name'])
                     ->addMeta('Slug', $term['slug'])
                     ->addMeta('Edit', get_edit_term_link($termId))
-                    ->addMetaChanged($oldTerm, $term)
-                    ->addMetaChanged($oldMeta, $meta)
+                    ->addMetaChanges($oldTerm, $term)
+                    ->addMetaChanges($oldMeta, $meta)
                     ->send();
             }
         }

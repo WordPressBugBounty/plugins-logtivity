@@ -23,29 +23,8 @@
  */
 abstract class Logtivity_Abstract_Logger
 {
-    /**
-     * @var string[]
-     */
-    protected array $ignoredPostTypes = [
-        'revision',
-        'customize_changeset',
-        'nav_menu_item',
-        'edd_log',
-        'edd_payment',
-        'edd_license_log',
-    ];
-
-    /**
-     * @var string[]
-     */
-    protected array $ignoredPostTitles = [
-        'Auto Draft',
-    ];
-
-    /**
-     * @var string[]
-     */
-    protected array $ignoredPostStatuses = ['trash'];
+    public const LAST_LOGGED_KEY     = 'logtivity_last_logged';
+    public const LAST_LOGGED_SECONDS = 5;
 
     public function __construct()
     {
@@ -58,160 +37,98 @@ abstract class Logtivity_Abstract_Logger
     abstract protected function registerHooks(): void;
 
     /**
-     * @param WP_Post $post
+     * @param string|int $id
+     * @param ?string    $metaType
      *
      * @return bool
      */
-    protected function shouldIgnore(WP_Post $post): bool
+    protected function recentlyLogged($id, ?string $metaType = null): bool
     {
-        return $this->ignoringPostType($post->post_type)
-            || $this->ignoringPostTitle($post->post_title)
-            || $this->ignoringPostStatus($post->post_status)
-            || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE);
-    }
+        if ($metaType) {
+            /* Use a metadata table */
+            $lastLogged     = (int)get_metadata($metaType, $id, static::LAST_LOGGED_KEY, true);
+            $loggedRecently = (time() - $lastLogged) < static::LAST_LOGGED_SECONDS;
 
-    /**
-     * @param int $postId
-     *
-     * @return bool
-     */
-    protected function loggedRecently(int $postId): bool
-    {
-        $now = new DateTime();
+        } else {
+            /* Metadata not available, use transients */
+            $key = $this->getLastLoggedKey($id);
 
-        if ($date = get_post_meta($postId, 'logtivity_last_logged', true)) {
-            $lastLogged = $this->sanitizeDate($date);
-
-            $diffInSeconds = $now->getTimestamp() - $lastLogged->getTimestamp();
-
-            return $diffInSeconds < 5;
+            $loggedRecently = (bool)get_transient($key);
         }
 
-        return false;
+        return $loggedRecently;
     }
 
     /**
-     * @param ?string $date
+     * @param string|int $id
+     * @param ?string    $metaType
      *
-     * @return DateTime
+     * @return void
      */
-    protected function sanitizeDate(?string $date): DateTime
+    protected function setRecentlyLogged($id, ?string $metaType = null): void
     {
-        try {
-            return new DateTime($date);
+        if ($metaType) {
+            /* Use a metadata table */
+            update_metadata($metaType, $id, static::LAST_LOGGED_KEY, time());
 
-        } catch (Throwable $e) {
-            return new DateTime('1970-01-01');
+        } else {
+            /* Metadata not available, using transients */
+            $key = $this->getLastLoggedKey($id);
+
+            $className = explode('\\', static::class);
+
+            set_transient($key, $id . ': ' . array_pop($className), static::LAST_LOGGED_SECONDS);
         }
     }
 
     /**
-     * Ignoring certain post statuses. Example: trash.
-     * We already have a postWasTrashed hook so
-     * don't need to log twice.
-     *
-     * @param ?string $postStatus
-     *
-     * @return bool
-     */
-    protected function ignoringPostStatus(?string $postStatus): bool
-    {
-        return in_array($postStatus, $this->ignoredPostStatuses);
-    }
-
-    /**
-     * Ignoring certain post types. Particularly system generated
-     * that are not directly triggered by the user.
-     *
-     * @param ?string $postType
-     *
-     * @return bool
-     */
-    protected function ignoringPostType(?string $postType): bool
-    {
-        return in_array($postType, $this->ignoredPostTypes);
-    }
-
-    /**
-     * Ignore certain system generated post titles
-     *
-     * @param ?string $title
-     *
-     * @return bool
-     */
-    protected function ignoringPostTitle(?string $title): bool
-    {
-        return in_array($title, $this->ignoredPostTitles);
-    }
-
-    /**
-     * Generate a label version of the given post ids post type
-     *
-     * @param int $postId
+     * @param string $id
      *
      * @return string
      */
-    protected function getPostTypeLabel(int $postId): string
+    protected function getLastLoggedKey(string $id): string
     {
-        return $this->formatLabel(get_post_type($postId));
-    }
-
-    /**
-     * @param string $label
-     *
-     * @return string
-     */
-    protected function formatLabel(string $label): string
-    {
-        global $wpdb;
-
-        return ucwords(
-            str_replace(
-                ['_', '-'], ' ',
-                str_replace($wpdb->get_blog_prefix(), '', $label)
-            )
+        $key = join(
+            ':',
+            [
+                static::class,
+                $id,
+            ]
         );
+
+        return static::LAST_LOGGED_KEY . '_' . md5($key);
     }
 
     /**
-     * @param string $metaType
-     * @param int    $parentId
+     * @param string   $metaType
+     * @param int      $parentId
      *
      * @return array
      */
     protected function getMetadata(string $metaType, int $parentId): array
     {
-        $metaValues = array_map(
+        return array_map(
             function ($row) {
-                return is_array($row) ? join(':', $row) : $row;
+                return logtivity_logger_value($row);
             },
             get_metadata($metaType, $parentId) ?: []
         );
-
-        return $this->sanitizeDataFields($metaValues);
     }
 
     /**
      * @param array $fields
+     * @param array $ignoredKeys
      *
      * @return array
      */
-    protected function sanitizeDataFields(array $fields): array
+    protected function sanitizeDataFields(array $fields, array $ignoredKeys = []): array
     {
         $values = [];
         foreach ($fields as $key => $value) {
-            if (is_string($value) && is_serialized($value)) {
-                $value = unserialize($value);
-                if (is_array($value)) {
-                    if (array_is_list($value) == false) {
-                        $value = array_keys(array_filter($value));
-                    }
-                    $value = join(':', $value);
-                }
+            if (in_array($key, $ignoredKeys) == false) {
+                $key = logtivity_logger_label($key);
+                $values[$key] = logtivity_logger_value($value);
             }
-            $key = $this->formatLabel($key);
-
-            $values[$key] = $value;
         }
 
         return $values;

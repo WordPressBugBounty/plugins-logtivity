@@ -54,7 +54,7 @@
                 </td>
                 <td>
                     <small>
-                        <?php echo sanitize_text_field(date('M d Y, H:i:s', strtotime($log->occurred_at))) ?>
+                        <?php echo logtivity_datetime($log->occurred_at); ?>
                     </small>
                 </td>
                 <td class="text-center">

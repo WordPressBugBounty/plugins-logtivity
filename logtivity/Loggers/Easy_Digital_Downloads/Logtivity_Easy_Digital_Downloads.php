@@ -35,14 +35,21 @@ class Logtivity_Easy_Digital_Downloads extends Logtivity_Abstract_Easy_Digital_D
         add_action('edd_cart_discount_removed', [$this, 'discountRemoved'], 10, 2);
     }
 
-    public function itemAddedToCart($download_id, $options, $items)
+    /**
+     * @param int   $downloadId
+     * @param array $options
+     * @param array $items
+     *
+     * @return void
+     */
+    public function itemAddedToCart($downloadId, $options, $items): void
     {
         $log = Logtivity::log()
             ->setAction('Download Added to Cart')
-            ->setContext(logtivity_get_the_title($download_id))
-            ->setPostId($download_id);
+            ->setContext(logtivity_get_the_title($downloadId))
+            ->setPostId($downloadId);
 
-        $prices = edd_get_variable_prices($download_id);
+        $prices = edd_get_variable_prices($downloadId);
 
         foreach ($items as $item) {
             if (isset($item['options']['price_id']) && isset($prices[$item['options']['price_id']])) {
@@ -57,42 +64,63 @@ class Logtivity_Easy_Digital_Downloads extends Logtivity_Abstract_Easy_Digital_D
         $log->send();
     }
 
-    public function itemRemovedFromCart($key, $item_id)
+    /**
+     * @param int $key
+     * @param int $itemId
+     *
+     * @return void
+     */
+    public function itemRemovedFromCart($key, $itemId): void
     {
         Logtivity::log()
             ->setAction('Download Removed from Cart')
-            ->setContext(logtivity_get_the_title($item_id))
+            ->setContext(logtivity_get_the_title($itemId))
             ->send();
     }
 
-    public function paymentStatusUpdated($payment_id, $status, $old_status)
+    /**
+     * @param int    $paymentId
+     * @param string $status
+     * @param string $oldStatus
+     *
+     * @return void
+     */
+    public function paymentStatusUpdated($paymentId, $status, $oldStatus): void
     {
-        $payment = new EDD_Payment($payment_id);
+        $payment = new EDD_Payment($paymentId);
+        switch ($status) {
+            case 'refunded':
+                $this->paymentRefunded($payment);
+                break;
 
-        if ($status == 'refunded') {
-            $this->paymentRefunded($payment);
+            case 'publish':
+                $this->paymentCompleted($payment);
+                break;
+            case 'edd_subscription':
+                // Don't log these
+                break;
+
+            default:
+                Logtivity::log()
+                    ->setAction('Payment Status Changed to ' . ucfirst($status))
+                    ->setContext($this->getPaymentKey($payment))
+                    ->addMeta('Payment Key', $this->getPaymentKey($payment))
+                    ->addMeta('Total', $payment->total)
+                    ->addMeta('Currency', $payment->currency)
+                    ->addMeta('Gateway', $payment->gateway)
+                    ->addMeta('Customer ID', $payment->customer_id)
+                    ->addMeta('Prevous Status', ucfirst($oldStatus))
+                    ->send();
+                break;
         }
-
-        if ($status == 'publish') {
-            $this->paymentCompleted($payment);
-        }
-
-        if ($status == 'edd_subscription') {
-            return;
-        }
-
-        Logtivity::log()
-            ->setAction('Payment Status Changed to ' . ucfirst($status))
-            ->setContext($this->getPaymentKey($payment))
-            ->addMeta('Payment Key', $this->getPaymentKey($payment))
-            ->addMeta('Total', $payment->total)
-            ->addMeta('Currency', $payment->currency)
-            ->addMeta('Gateway', $payment->gateway)
-            ->addMeta('Customer ID', $payment->customer_id)
-            ->send();
     }
 
-    public function paymentCompleted($payment)
+    /**
+     * @param EDD_Payment $payment
+     *
+     * @return void
+     */
+    protected function paymentCompleted(EDD_Payment $payment): void
     {
         $key = $this->getPaymentKey($payment);
 
@@ -116,60 +144,84 @@ class Logtivity_Easy_Digital_Downloads extends Logtivity_Abstract_Easy_Digital_D
             ->send();
     }
 
-    public function paymentRefunded($EDD_Payment)
+    /**
+     * @param EDD_Payment $payment
+     *
+     * @return void
+     */
+    protected function paymentRefunded(EDD_Payment $payment): void
     {
         Logtivity::log()
             ->setAction('Payment Refunded')
-            ->setContext($this->getPaymentKey($EDD_Payment))
-            ->addMeta('Amount', $EDD_Payment->get_meta('_edd_payment_total'))
-            ->addMeta('Payment Key', $this->getPaymentKey($EDD_Payment))
-            ->addMeta('Customer ID', $EDD_Payment->customer_id)
+            ->setContext($this->getPaymentKey($payment))
+            ->addMeta('Amount', $payment->get_meta('_edd_payment_total'))
+            ->addMeta('Payment Key', $this->getPaymentKey($payment))
+            ->addMeta('Customer ID', $payment->customer_id)
             ->send();
     }
 
-    public function getPaymentKey($payment)
+    /**
+     * @param EDD_Payment $payment
+     *
+     * @return ?string
+     */
+    protected function getPaymentKey(EDD_Payment $payment): ?string
     {
         $meta = $payment->get_meta();
 
-        if (isset($meta['key'])) {
-            return $meta['key'];
+        return $meta['key'] ?? null;
+    }
+
+    /**
+     * @param int   $created
+     * @param array $args
+     *
+     * @return void
+     */
+    public function customerCreated($created, $args): void
+    {
+        if ($created) {
+            Logtivity::log()
+                ->setAction('Customer Created')
+                ->setContext($args['name'] ?? null)
+                ->addMeta('Customer ID', $created)
+                ->send();
         }
     }
 
-    public function customerCreated($created, $args)
+    /**
+     * @param int       $downloadId
+     * @param string    $email
+     * @param int|false $paymentId
+     * @param array     $args
+     *
+     * @return void
+     */
+    public function fileDownloaded($downloadId, $email, $paymentId, $args): void
     {
-        if (!$created) {
-            return;
-        }
+        $download = new EDD_Download($downloadId);
+
+        $payment = new EDD_Payment($paymentId);
+
+        $fileKey = $args['file_key'] ?? null;
 
         Logtivity::log()
-            ->setAction('Customer Created')
-            ->setContext($args['name'])
-            ->addMeta('Customer ID', $created)
-            ->send();
-    }
-
-    public function fileDownloaded($download, $email, $payment, $args)
-    {
-        $download = new EDD_Download($download);
-
-        $payment = new EDD_Payment($payment);
-
-        $log = Logtivity::log()
             ->setAction('File Downloaded')
             ->setContext($this->getDownloadTitle($download->get_ID(), $args['price_id'] ?? null))
             ->setPostId($download->get_ID())
-            ->addMeta('Payment Key', $this->getPaymentKey($payment));
-
-        if (isset($args['file_key'])) {
-            $log->addMeta('File ID', $args['file_key']);
-        }
-
-        $log->addMeta('Customer ID', $payment->customer_id)
+            ->addMeta('Payment Key', $this->getPaymentKey($payment))
+            ->addMetaIf($fileKey, 'File ID', $fileKey)
+            ->addMeta('Customer ID', $payment->customer_id)
             ->send();
     }
 
-    public function discountApplied($code, $discounts)
+    /**
+     * @param string $code
+     * @param array  $discounts
+     *
+     * @return void
+     */
+    public function discountApplied($code, $discounts): void
     {
         Logtivity::log()
             ->setAction('Discount Applied')
@@ -177,7 +229,13 @@ class Logtivity_Easy_Digital_Downloads extends Logtivity_Abstract_Easy_Digital_D
             ->send();
     }
 
-    public function discountRemoved($code, $discounts)
+    /**
+     * @param string $code
+     * @param array $discounts
+     *
+     * @return void
+     */
+    public function discountRemoved($code, $discounts): void
     {
         Logtivity::log()
             ->setAction('Discount Removed')
@@ -186,5 +244,4 @@ class Logtivity_Easy_Digital_Downloads extends Logtivity_Abstract_Easy_Digital_D
     }
 }
 
-$Logtivity_Easy_Digital_Downloads = new Logtivity_Easy_Digital_Downloads;
-
+new Logtivity_Easy_Digital_Downloads();

@@ -151,8 +151,8 @@ class Logtivity_User extends Logtivity_Abstract_Logger
                 ->addMeta('Role', $user->getRole())
                 ->addMetaIf($passwordChange, 'Password Changed', 'Yes')
                 ->addMetaIf($activationKey, 'Activation Pending', 'Yes')
-                ->addMetaChanged($oldUserdata, $userdata)
-                ->addMetaChanged($oldMeta, $meta)
+                ->addMetaChanges($oldUserdata, $userdata)
+                ->addMetaChanges($oldMeta, $meta)
                 ->send();
         }
     }
@@ -196,7 +196,7 @@ class Logtivity_User extends Logtivity_Abstract_Logger
      */
     public function set_user_role($userId): void
     {
-        if ($this->user[$userId]) {
+        if ($this->user[$userId] ?? null) {
             $this->profile_update($userId, $this->user[$userId]);
         }
     }
@@ -230,7 +230,7 @@ class Logtivity_User extends Logtivity_Abstract_Logger
     /**
      * @inheritDoc
      */
-    protected function sanitizeDataFields(array $fields): array
+    protected function sanitizeDataFields(array $fields, array $ignoredKeys = []): array
     {
         if (array_key_exists('user_pass', $fields)) {
             unset($fields['user_pass']);
