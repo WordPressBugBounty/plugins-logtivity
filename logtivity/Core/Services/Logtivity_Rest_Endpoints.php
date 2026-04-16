@@ -71,14 +71,18 @@ class Logtivity_Rest_Endpoints
     }
 
     /**
-     * @param string $authHeader
+     * @param ?string $authHeader
      *
      * @return true|WP_Error
      */
-    protected function verifyAuthorization(string $authHeader)
+    protected function verifyAuthorization(?string $authHeader)
     {
         if ($apikey = (new Logtivity_Options())->getApiKey()) {
             try {
+                if ($authHeader == false) {
+                    throw new Exception('No authorization provided');
+                }
+
                 $keys = explode(' ', $authHeader);
                 if (count($keys) == 2 && $keys[0] == 'Bearer') {
                     $payload = $this->parseToken($keys[1], $apikey);
@@ -102,6 +106,9 @@ class Logtivity_Rest_Endpoints
                             )
                         );
                     }
+
+                } else {
+                    throw new Exception('Malformed header');
                 }
 
                 return true;

@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.3.6
+ * Version:           3.3.7
  * Text Domain:       logtivity
  * Requires at least: 4.7
  * Requires PHP:      7.4
@@ -44,7 +44,7 @@ class Logtivity
     /**
      * @var string
      */
-    protected string $version = '3.3.6';
+    protected string $version = '3.3.7';
 
     /**
      * Integrations with other plugins

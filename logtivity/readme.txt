@@ -3,8 +3,8 @@
 Contributors: logtivity, stevejburge
 Tags: activity log, error logs, event monitoring, user activity, error log, activity logs, logs, log data, site activities, site events
 Requires at least: 6.6
-Tested up to: 6.8
-Stable tag: 3.3.6
+Tested up to: 6.9
+Stable tag: 3.3.7
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -262,7 +262,12 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 
 == Changelog ==
 
-= 3.3.6 =
+= 3.3.7 15 Apr 2026 =
+  * Catch null auth header on API call
+  * Catch bad auth header on API call
+  * Allow null post ID for getting titles
+
+= 3.3.6 15 Dec 2025 =
   * Include plugin version number in api responses
   * Stricter consistency with action texts
   * Fix: Exceptions were never being logged

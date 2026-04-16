@@ -76,11 +76,11 @@ if (function_exists('logtivity_dd') == false) {
     }
 
     /**
-     * @param int $postId
+     * @param ?int $postId
      *
      * @return string
      */
-    function logtivity_get_the_title(int $postId): string
+    function logtivity_get_the_title(?int $postId): string
     {
         $wpTexturize = remove_filter('the_title', 'wptexturize');
 
