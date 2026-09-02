@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -115,10 +115,12 @@ class Logtivity_Memberpress extends Logtivity_Abstract_Logger
 
     public function profileUpdated()
     {
-        if (MeprUtils::is_post_request() &&
-            isset($_POST['mepr-process-account']) && $_POST['mepr-process-account'] == 'Y' &&
-            isset($_POST['mepr_account_nonce']) && wp_verify_nonce($_POST['mepr_account_nonce'], 'update_account')) {
-            $user = new Logtivity_Wp_User;
+        if (
+            MeprUtils::is_post_request()
+            && sanitize_text_field($_POST['mepr-process-account'] ?? null) == 'Y'
+            && wp_verify_nonce(sanitize_text_field($_POST['mepr_account_nonce'] ?? null), 'update_account')
+        ) {
+            $user = new Logtivity_Wp_User();
 
             Logtivity::log()
                 ->setAction('Profile Updated')

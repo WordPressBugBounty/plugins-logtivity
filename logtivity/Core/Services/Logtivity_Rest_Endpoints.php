@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2025 Logtivity. All rights reserved
+ * @copyright 2025-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -45,18 +45,31 @@ class Logtivity_Rest_Endpoints
                         return $this->verifyAuthorization($request->get_header('Authorization'));
                     },
                     'callback'            => function () {
-                        $options = new Logtivity_Options();
+                        try {
+                            $options = new Logtivity_Options();
 
-                        $response = $options->getOptions();
+                            $response = $options->getOptions();
 
-                        $lastCheckinOption = 'logtivity_last_settings_check_in_at';
+                            $lastCheckinOption = 'logtivity_last_settings_check_in_at';
 
-                        $response[$lastCheckinOption]        = get_option($lastCheckinOption);
-                        $response[$lastCheckinOption]        = $response[$lastCheckinOption]['date'] ?? null;
-                        $response['logtivity_checkin_delay'] = $options->checkinDelay;
-                        $response['version']                 = $this->getLogtivityVersion();
+                            $response[$lastCheckinOption]        = get_option($lastCheckinOption);
+                            $response[$lastCheckinOption]        = $response[$lastCheckinOption]['date'] ?? null;
+                            $response['logtivity_checkin_delay'] = $options->checkinDelay;
+                            $response['version']                 = $this->getLogtivityVersion();
 
-                        return $response;
+                            return $response;
+
+                        } catch (Throwable $error) {
+                            return new WP_Error(
+                                'logtivity_error',
+                                $error->getMessage(),
+                                [
+                                    'status' => $error->getCode(),
+                                    'line'   => $error->getLine(),
+                                    'file'   => $error->getFile(),
+                                ]
+                            );
+                        }
                     },
                 ]);
         });

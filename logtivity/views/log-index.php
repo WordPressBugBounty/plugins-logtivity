@@ -2,7 +2,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -37,27 +37,34 @@ echo logtivity_view('_admin-header', compact('options'));
 
 			<div class="logtivity-row">
 				<div class="logtivity-col-md-4">
-					<label>
+					<label for="logtivity-search-action">
 						<?php esc_html_e( 'Search', 'logtivity' ) ?>
 					</label>
-					<input type="search" name="search_action" class="large-text" placeholder="<?php esc_attr_e( 'User Created or %keyword%', 'logtivity' ) ?>">
+					<input id="logtivity-search-action" type="search" name="search_action" class="large-text" placeholder="<?php esc_attr_e( 'User Created or %keyword%', 'logtivity' ) ?>">
 				</div>
 				<div class="logtivity-col-md-4">
-					<label>
+					<label for="logtivity-search-context">
 						<?php esc_html_e( 'Context', 'logtivity' ) ?>
 					</label>
-					<input type="search" name="search_context" class="large-text" placeholder="<?php esc_attr_e( 'admin or %keyword%', 'logtivity' ) ?>">
+					<input id="logtivity-search-context" type="search" name="search_context" class="large-text" placeholder="<?php esc_attr_e( 'admin or %keyword%', 'logtivity' ) ?>">
 				</div>
 				<div class="logtivity-col-md-4">
-					<label>
+					<label for="logtivity-search-user">
 						<?php esc_html_e( 'User', 'logtivity' ) ?>
 					</label>
-					<input type="search" name="action_user" class="large-text" placeholder="<?php esc_attr_e( 'User ID / Username / IP Address', 'logtivity' ) ?>">
+					<input id="logtivity-search-user" type="search" name="action_user" class="large-text" placeholder="<?php esc_attr_e( 'User ID / Username / IP Address', 'logtivity' ) ?>">
 				</div>
 			</div>
 		</form>
 
-		<div style="padding-top: 15px" id="logtivity-log-index">
+		<div
+			style="padding-top: 15px"
+			id="logtivity-log-index"
+			role="region"
+			aria-live="polite"
+			aria-busy="true"
+			aria-label="<?php esc_attr_e( 'Log results', 'logtivity' ) ?>"
+		>
 			<!-- Populated with AJAX -->
 		</div>
 

@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -21,6 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abstract_Easy_Digital_Downloads
 {
     protected $deactivatingLicenseArgs;
@@ -128,7 +129,10 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
         if (empty($this->deactivatingLicenseArgs['url']) && !edd_software_licensing()->force_increase()) {
 
             // Attempt to grab the URL from the user agent if no URL is specified
-            $domain = array_map('trim', explode(';', $_SERVER['HTTP_USER_AGENT']));
+            $domain = array_map(
+                'trim',
+                explode(';', sanitize_text_field($_SERVER['HTTP_USER_AGENT'] ?? ''))
+            );
 
             if (!empty($domain[1])) {
                 $this->deactivatingLicenseArgs['url'] = trim($domain[1]);
@@ -251,11 +255,11 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
      */
     public function siteDeactivated()
     {
-        if (!wp_verify_nonce($_GET['_wpnonce'] ?? null, 'edd_deactivate_site_nonce')) {
+        if (!wp_verify_nonce(sanitize_text_field($_GET['_wpnonce'] ?? null), 'edd_deactivate_site_nonce')) {
             return;
         }
 
-        $license_id = absint($_GET['license']);
+        $license_id = absint(sanitize_text_field($_GET['license']));
         $license    = edd_software_licensing()->get_license($license_id);
 
         if ($license_id !== $license->ID) {
@@ -266,38 +270,31 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             return;
         }
 
-        $site_url = !empty($_GET['site_url']) ? urldecode($_GET['site_url']) : false;
-        $site_id  = !empty($_GET['site_id']) ? absint($_GET['site_id']) : false;
+        $site = absint(sanitize_text_field($_GET['site_id'] ?? null))
+            ?: urldecode(sanitize_text_field($_GET['site_url'] ?? ''));
 
-        if (empty($site_url) && empty($site_id)) {
-            return;
-        }
+        if ($site) {
 
-        $site = !empty($site_id) ? $site_id : $site_url;
+            $log = Logtivity::log()
+                ->setAction('Site Deactivated')
+                ->setContext($this->getDownloadTitle($license))
+                ->addMeta('License Key', $license->key)
+                ->addMeta('Site ID', $site);
 
-        /**
-         * If we've made it this far let's log it.
-         */
-
-        $log = Logtivity::log()
-            ->setAction('Site Deactivated')
-            ->setContext($this->getDownloadTitle($license))
-            ->addMeta('License Key', $license->key)
-            ->addMeta('Site ID', $site);
-
-        if (!is_user_logged_in()) {
-            $log->setUser($license->user_id ?? null);
-        }
-
-        try {
-            if ($license->customer_id) {
-                $log->addMeta('Customer ID', $license->customer_id);
+            if (!is_user_logged_in()) {
+                $log->setUser($license->user_id ?? null);
             }
-        } catch (Throwable $e) {
-            // Ignore
-        }
 
-        $log->send();
+            try {
+                if ($license->customer_id) {
+                    $log->addMeta('Customer ID', $license->customer_id);
+                }
+            } catch (Throwable $e) {
+                // Ignore
+            }
+
+            $log->send();
+        }
     }
 
     /**
@@ -310,13 +307,13 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
      */
     public function siteAdded()
     {
-        if (!wp_verify_nonce($_POST['edd_add_site_nonce'], 'edd_add_site_nonce')) {
+        if (!wp_verify_nonce(sanitize_text_field($_POST['edd_add_site_nonce'] ?? null), 'edd_add_site_nonce')) {
             return;
         }
 
-        if (!empty($_POST['license_id']) && empty($_POST['license'])) {
+        if (sanitize_text_field($_POST['license_id'] ?? null) && empty($_POST['license'])) {
             // In 3.5, we switched from checking for license_id to just license. Fallback check for backwards compatibility
-            $_POST['license'] = $_POST['license_id'];
+            $_POST['license'] = sanitize_text_field($_POST['license_id']);
         }
 
         $license_id = absint($_POST['license']);

@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -32,12 +32,14 @@
 
 ?>
 <table class="form-table logtivity-table">
+    <caption class="screen-reader-text"><?php esc_html_e('Activity logs', 'logtivity'); ?></caption>
     <thead>
     <tr>
-        <th>Action</th>
-        <th>Context</th>
-        <th>User</th>
-        <th colspan="2">Date</th>
+        <th scope="col">Action</th>
+        <th scope="col">Context</th>
+        <th scope="col">User</th>
+        <th scope="col">Date</th>
+        <th scope="col">Actions</th>
     </tr>
     </thead>
     <tbody>
@@ -58,7 +60,7 @@
                     </small>
                 </td>
                 <td class="text-center">
-                    <button class="button js-logtivity-view-log">View</button>
+                    <button type="button" class="button js-logtivity-view-log" aria-haspopup="dialog" aria-controls="logtivity-log-modal" aria-label="<?php esc_attr_e('View log details', 'logtivity'); ?>">View</button>
                     <div style="display: none;" class="js-modal-content">
                         <?php echo logtivity_view('_log-show', ['log' => $log,]) ?>
                     </div>
@@ -68,32 +70,34 @@
         <?php endforeach ?>
     <?php elseif (isset($message)) : ?>
         <tr>
-            <td colspan="6"><?php echo sanitize_text_field($message) ?></td>
+            <td colspan="5"><?php echo sanitize_text_field($message) ?></td>
         </tr>
     <?php else : ?>
         <tr>
-            <td colspan="6">No results found.</td>
+            <td colspan="5">No results found.</td>
         </tr>
     <?php endif ?>
     </tbody>
 </table>
 
 <?php if ($meta->current_page ?? null) : ?>
-    <div class="nav-pages-buttons" data-current-page="<?php echo $meta->current_page ?>">
-        <button <?php echo $meta->current_page == 1 ? 'disabled' : ''; ?>
+    <nav class="nav-pages-buttons" data-current-page="<?php echo esc_attr($meta->current_page) ?>" aria-label="<?php esc_attr_e('Log pages', 'logtivity'); ?>">
+        <button type="button" <?php echo $meta->current_page == 1 ? 'disabled' : ''; ?>
                 class="js-logtivity-pagination button-primary nav-pages-prev"
-                data-page="<?php echo sanitize_text_field($meta->current_page - 1) ?>">
+                aria-label="<?php esc_attr_e('Previous log page', 'logtivity'); ?>"
+                data-page="<?php echo esc_attr($meta->current_page - 1) ?>">
             &laquo; Previous
         </button>
-        <button <?php echo $hasNextPage ? '' : 'disabled'; ?>
+        <button type="button" <?php echo $hasNextPage ? '' : 'disabled'; ?>
                 class="js-logtivity-pagination button-primary nav-pages-next"
-                data-page="<?php echo sanitize_text_field($meta->current_page + 1) ?>">Next &raquo;
+                aria-label="<?php esc_attr_e('Next log page', 'logtivity'); ?>"
+                data-page="<?php echo esc_attr($meta->current_page + 1) ?>">Next &raquo;
         </button>
-    </div>
+    </nav>
 <?php endif ?>
 
-<div class="logtivity-modal">
-    <div class="logtivity-modal-dialog">
+<div id="logtivity-log-modal" class="logtivity-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="logtivity-log-modal-title">
+    <div class="logtivity-modal-dialog" tabindex="-1">
         <div class="logtivity-modal-content">
             <!-- Populated with JS -->
         </div>

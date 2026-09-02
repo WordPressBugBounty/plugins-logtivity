@@ -1,28 +1,28 @@
 <?php
 
-if (function_exists('logtivity_dd') == false) {
-    /**
-     * @package   Logtivity
-     * @contact   logtivity.io, hello@logtivity.io
-     * @copyright 2024-2025 Logtivity. All rights reserved
-     * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
-     *
-     * This file is part of Logtivity.
-     *
-     * Logtivity is free software: you can redistribute it and/or modify
-     * it under the terms of the GNU General Public License as published by
-     * the Free Software Foundation, either version 2 of the License, or
-     * (at your option) any later version.
-     *
-     * Logtivity is distributed in the hope that it will be useful,
-     * but WITHOUT ANY WARRANTY; without even the implied warranty of
-     * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     * GNU General Public License for more details.
-     *
-     * You should have received a copy of the GNU General Public License
-     * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
-     */
+/**
+ * @package   Logtivity
+ * @contact   logtivity.io, hello@logtivity.io
+ * @copyright 2024-2026 Logtivity. All rights reserved
+ * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
+ *
+ * This file is part of Logtivity.
+ *
+ * Logtivity is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * Logtivity is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
+if (function_exists('logtivity_dd') == false) {
     /**
      *
      * Dump and Die variable or whatever
@@ -102,7 +102,15 @@ if (function_exists('logtivity_dd') == false) {
             $customUrl = rtrim(sanitize_url(LOGTIVITY_API_URL), '/');
         }
 
-        return $customUrl ?? 'https://api.logtivity.io';
+        return $customUrl ?? logtivity_get_production_api_url();
+    }
+
+    /**
+     * @return string
+     */
+    function logtivity_get_production_api_url(): string
+    {
+        return 'https://api.logtivity.io';
     }
 
     /**
@@ -114,7 +122,24 @@ if (function_exists('logtivity_dd') == false) {
             $customUrl = rtrim(sanitize_url(LOGTIVITY_APP_URL), '/');
         }
 
-        return $customUrl ?? 'https://app.logtivity.io';
+        return $customUrl ?? logtivity_get_production_app_url();
+    }
+
+    /**
+     * @return string
+     */
+    function logtivity_get_production_app_url(): string
+    {
+        return 'https://app.logtivity.io';
+    }
+
+    /**
+     * @return bool
+     */
+    function logtivity_is_production(): bool
+    {
+        return logtivity_get_production_app_url() == logtivity_get_app_url()
+            || logtivity_get_production_api_url() == logtivity_get_api_url();
     }
 
     /**
@@ -127,24 +152,6 @@ if (function_exists('logtivity_dd') == false) {
         return $hash != md5(home_url());
     }
 
-    /**
-     * @return array
-     */
-    function logtivity_get_error_levels(): array
-    {
-        static $errorLevels = null;
-        if ($errorLevels === null) {
-            $errorLevels = [];
-            $allCodes    = get_defined_constants();
-            foreach ($allCodes as $code => $constant) {
-                if (strpos($code, 'E_') === 0) {
-                    $errorLevels[$constant] = $code;
-                }
-            }
-        }
-
-        return $errorLevels;
-    }
 
     /**
      * @param array $array

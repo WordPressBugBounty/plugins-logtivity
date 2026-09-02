@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -110,7 +110,10 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
         add_action('wp_update_nav_menu', [$this, 'menuUpdated'], 10, 2);
         add_action('init', [$this, 'maybeSettingsUpdated'], 10, 1);
         add_action('permalink_structure_changed', [$this, 'permalinksUpdated'], 10, 2);
-        add_action('update_option', [$this, 'optionUpdated'], 10, 3);
+
+        if (get_option('logtivity_enable_options_table_logging')) {
+            add_action('update_option', [$this, 'optionUpdated'], 10, 3);
+        }
 
         add_filter('widget_update_callback', [$this, 'widgetUpdated'], 10, 4);
     }

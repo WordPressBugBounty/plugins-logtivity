@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -28,6 +28,6 @@
 	<img style="margin: 20px 0 20px; display: block; width: 200px; height: auto;" src="<?php echo plugin_dir_url('logtivity.php') ?>logtivity/assets/logtivity-logo.svg" alt="Logtivity">
 
 	<h2 style="margin-top: 0" class="title">We've detected a change in your site URL.</h2>
-	<p>Is this a dev or staging environment? As a precaution, we've stopped logging. To start recording logs, again click the 'Update Settings' button on the <a href="<?php echo admin_url( 'admin.php?page=logtivity-settings' ) ?>">settings page</a>.</p>
+	<p>Is this a dev or staging environment? As a precaution, we've stopped logging. To start recording logs, again click the 'Update Settings' button on the <a href="<?php echo admin_url( 'admin.php?page=logtivity-settings' ) ?>">Logtivity settings page</a>.</p>
 
 </div>

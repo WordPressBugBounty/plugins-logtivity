@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -44,9 +44,7 @@ class Logtivity_Options
         'logtivity_app_verify_url'               => ['rule' => 'is_bool', 'default' => 1],
         'logtivity_custom_plugin_name'           => ['rule' => 'is_string', 'default' => null],
         'logtivity_disable_default_logging'      => ['rule' => 'is_bool', 'default' => null],
-        'logtivity_disable_error_logging'        => ['rule' => 'is_bool', 'default' => null],
         'logtivity_disable_individual_logs'      => ['rule' => 'is_string', 'default' => null],
-        'logtivity_disabled_error_levels'        => ['rule' => 'is_array', 'default' => null],
         'logtivity_enable_debug_mode'            => ['rule' => 'is_bool', 'default' => null],
         'logtivity_enable_options_table_logging' => ['rule' => 'is_bool', 'default' => null],
         'logtivity_enable_post_meta_logging'     => ['rule' => 'is_bool', 'default' => null],
@@ -149,17 +147,6 @@ class Logtivity_Options
         return (bool)$this->getOption('logtivity_should_log_username');
     }
 
-    /**
-     * Get the error levels that are disabled
-     *
-     * @return array
-     */
-    public function disabledErrorLevels(): array
-    {
-        $result = (array)$this->getOption('logtivity_disabled_error_levels');
-
-        return array_keys(array_filter($result));
-    }
 
     /**
      * Should we be logging the response from the API
@@ -246,7 +233,8 @@ class Logtivity_Options
         }
 
         if ($checkApiKey) {
-            $this->checkApiKey($data['logtivity_site_api_key'] ?? $_POST['logtivity_site_api_key'] ?? null);
+            $this->checkApiKey($data['logtivity_site_api_key']
+                ?? sanitize_text_field($_POST['logtivity_site_api_key'] ?? null));
         }
     }
 

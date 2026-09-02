@@ -1,11 +1,9 @@
 <?php
 
-use Code_Snippets\Snippet;
-
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -23,6 +21,9 @@ use Code_Snippets\Snippet;
  * You should have received a copy of the GNU General Public License
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+use Code_Snippets\Snippet;
+
 class Logtivity_Code_Snippets
 {
     public function __construct()
@@ -56,7 +57,9 @@ class Logtivity_Code_Snippets
      */
     public function snippetCreated(Snippet $snippet): void
     {
-        $cloneId = ($_GET['action'] ?? null) == 'clone' ? ($_GET['id'] ?? null) : null;
+        $cloneId = sanitize_text_field($_GET['action'] ?? null) == 'clone'
+            ? sanitize_text_field($_GET['id'] ?? null)
+            : null;
 
         $logger = Logtivity::log()
             ->setAction('Code Snippet Created')
@@ -110,6 +113,7 @@ class Logtivity_Code_Snippets
 
     /**
      * @param Logtivity_Logger $logger
+     * @param ?Snippet         $snippet
      *
      * @return void
      */

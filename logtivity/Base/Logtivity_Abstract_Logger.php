@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -21,6 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 abstract class Logtivity_Abstract_Logger
 {
     public const LAST_LOGGED_KEY     = 'logtivity_last_logged';

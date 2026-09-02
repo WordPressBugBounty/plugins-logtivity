@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -92,11 +92,19 @@ class Logtivity_User extends Logtivity_Abstract_Logger
      */
     public function user_register($userId): void
     {
-        $user = get_user($userId);
+        $log = Logtivity::log();
+
+        if (is_user_logged_in() == false) {
+            $log->setUser($userId);
+            $user = $log->user;
+        } else {
+            $user = new Logtivity_WP_User($userId);
+        }
+
         $meta = $this->getMetadata('user', $userId);
 
         Logtivity::log('User Created')
-            ->setContext($user->user_login)
+            ->setContext($user->getRole())
             ->addMetaArray($this->sanitizeDataFields($user->to_array()))
             ->addMetaArray($this->sanitizeDataFields($meta))
             ->send();
@@ -111,11 +119,12 @@ class Logtivity_User extends Logtivity_Abstract_Logger
      */
     public function deleted_user($userId, $reassign, $user): void
     {
+        $user         = new Logtivity_WP_User($user);
         $assignToUser = $reassign ? get_user($reassign) : null;
         $meta         = $this->getMetadata('user', $userId);
 
         Logtivity::log('User Deleted')
-            ->setContext($user->user_login)
+            ->setContext($user->getRole())
             ->addMetaIf($assignToUser, 'Reassign Content To', $assignToUser->user_login)
             ->addMetaArray($this->sanitizeDataFields($user->to_array()))
             ->addMetaArray($this->sanitizeDataFields($meta))
@@ -145,7 +154,7 @@ class Logtivity_User extends Logtivity_Abstract_Logger
         $userdata    = $this->sanitizeDataFields($userdata);
         if ($passwordChange || $oldUserdata != $userdata || $oldMeta != $meta) {
             Logtivity::log('User Updated')
-                ->setContext($user->userLogin())
+                ->setContext($user->getRole())
                 ->addMeta('User ID', $user->id())
                 ->addMeta('Username', $user->userLogin())
                 ->addMeta('Role', $user->getRole())

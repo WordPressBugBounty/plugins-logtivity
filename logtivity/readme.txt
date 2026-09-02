@@ -1,21 +1,21 @@
 === Activity Logs, User Activity Tracking, Multisite Activity Log from Logtivity ===
 
 Contributors: logtivity, stevejburge
-Tags: activity log, error logs, event monitoring, user activity, error log, activity logs, logs, log data, site activities, site events
+Tags: activity log, event monitoring, user activity, activity logs, logs, log data, site activities, site events
 Requires at least: 6.6
-Tested up to: 6.9
-Stable tag: 3.3.7
+Tested up to: 7.0
+Stable tag: 3.3.8
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Logtivity is the activity log service for WordPress admins. Logtivity is a unified activity log platform that tracks activity and errors across all your WordPress sites.
+Logtivity is the activity log service for WordPress admins. Logtivity is a unified activity log platform that tracks activity across all your WordPress sites.
 
 == Description ==
 
 <strong>When you set up Logtivity to monitor your WordPress sites, you can relax. We track everything that happens on the sites you maintain, and Logtivity also sends you alerts for important events!</strong>
 
-Logtivity is a unified platform that tracks activity and errors across all your WordPress sites. We record everything that happens, and then send you alerts for important events! You can install Logtivity’s plugin and then use our service to keep a close eye on everything that happens on your sites.
+Logtivity is a unified platform that tracks activity across all your WordPress sites. We record everything that happens, and then send you alerts for important events! You can install Logtivity’s plugin and then use our service to keep a close eye on everything that happens on your sites.
 
 If you work with clients, they never have to know that you’re using Logtivity. You can either show a white label version of the activity logs, or you can hide Logtivity entirely.
 
@@ -74,16 +74,6 @@ The image on this screen shows what you’ll see inside WordPress after installi
 All of the activity log data is visible and searchable in the WordPress admin area. And if you want more information on any specific log entry, you can click the “View” button next to each log.
 
 [Click here to see more about the WordPress integration](https://logtivity.io/features/easy-wordpress-integration/).
-
-### WordPress Error Logs ###
-
-Logtivity records all PHP errors on your sites, including Errors, Warnings, and Notices.
-
-You can see the errors, how often they occur, and when they last occurred. It doesn’t matter where your site is hosted. Our logs will record the errors and point you to the file that’s causing problems.
-
-We’ll notify you as soon as an error occurs, allowing you to jump on it as soon as possible rather than waiting for a user to report it.
-
-[Click here to see more about error logs](https://logtivity.io/features/error-logs/).
 
 ### Logtivity has a White Label Mode for Agencies ###
 
@@ -249,7 +239,7 @@ Logtivity is different from those plugins in several important ways:
 
 = How does Logitivity compare to other management services? =
 
-There are some hosted solutions such as ManageWP, MainWP, WPMU Dev, Jetpack, WP Umbrella, WP Remote, InfiniteWP, CMS Commander, iControlWP and more. Logtivity is different because it is focused on more advanced tools for agencies. With Logtivity you have very detailed activity logs and incredibly detailed error logs. We're committed to building expert levels tools to help WordPress professionals.
+There are some hosted solutions such as ManageWP, MainWP, WPMU Dev, Jetpack, WP Umbrella, WP Remote, InfiniteWP, CMS Commander, iControlWP and more. Logtivity is different because it is focused on more advanced tools for agencies. With Logtivity you have very detailed activity logs. We're committed to building expert levels tools to help WordPress professionals.
 
 = Logitivity branding information =
 
@@ -261,6 +251,14 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 * Log tivity, loggtivity, logg tivity (all incorrect)
 
 == Changelog ==
+
+= 3.3.8 02 Sep 2026 =
+  * Security updates / sanitize all inputs
+  * Never log draft posts
+  * Always use user role for contexts
+  * Display notice if not using production application.
+  * Remove error logging/capture
+  * Accessibility improvements
 
 = 3.3.7 15 Apr 2026 =
   * Catch null auth header on API call

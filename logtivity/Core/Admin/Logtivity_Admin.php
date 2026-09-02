@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -201,7 +201,12 @@ class Logtivity_Admin
      */
     public function update(): void
     {
-        if (!wp_verify_nonce($_POST['logtivity_update_settings'] ?? null, 'logtivity_update_settings')) {
+        if (
+            !wp_verify_nonce(
+                sanitize_text_field($_POST['logtivity_update_settings'] ?? null),
+                'logtivity_update_settings'
+            )
+        ) {
             wp_safe_redirect($this->settingsPageUrl());
             exit();
         }
@@ -238,8 +243,13 @@ class Logtivity_Admin
     public function registerSite(): void
     {
         try {
-            if (wp_verify_nonce($_POST['logtivity_register_site'] ?? null, 'logtivity_register_site')) {
-                $teamApi  = sanitize_text_field($_POST['logtivity_team_api_key'] ?? null);
+            if (
+                wp_verify_nonce(
+                    sanitize_text_field($_POST['logtivity_register_site'] ?? null),
+                    'logtivity_register_site'
+                )
+            ) {
+                $teamApi = sanitize_text_field($_POST['logtivity_team_api_key'] ?? null);
 
                 $response = Logtivity::registerSite($teamApi);
 

@@ -2,7 +2,7 @@
 
 /**
  * @package   Logtivity
- * @copyright 2025 Logtivity.io. All rights reserved
+ * @copyright 2025-2026 Logtivity. All rights reserved
  * @contact   logtivity.io, hello@logtivity.io
  *
  * This file is part of Logtivity

@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -46,11 +46,24 @@ echo logtivity_view('_admin-header', compact('options'));
             <div class="logtivity-notice logtivity-notice-danger">
                 <h2>We've detected a change in your site URL.</h2>
                 <div>
-                    Is this a dev or staging environment? As a precaution, we've stopped logging. To start recording
+                    As a precaution, we've stopped logging. To start recording
                     logs, again click the 'Update Settings' button below.
                 </div>
             </div>
-        <?php endif ?>
+        <?php endif;
+
+        if (logtivity_is_production() == false) : ?>
+            <div class="logtivity-notice logtivity-notice-warning">
+                <h2>This site is not sending logs to the production application.</h2>
+                <div>
+                    See your dashboard at
+                    <a target="_blank"
+                       href="<?php echo logtivity_get_app_url(); ?>">
+                        <?php esc_html_e('Logtivity dashboard', 'logtivity'); ?>
+                    </a>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <form action="<?php echo admin_url('admin-ajax.php'); ?>?action=logtivity_update_settings" method="post">
 
@@ -59,7 +72,7 @@ echo logtivity_view('_admin-header', compact('options'));
             <table class="form-table">
                 <tbody>
                 <tr class="user-user-login-wrap">
-                    <th>
+                    <th scope="row">
                         <label for="logtivity_site_api_key">Site API Key</label>
                         <?php if (has_filter('logtivity_site_api_key')): ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
@@ -115,7 +128,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 </tr>
 
                 <tr class="user-user-login-wrap">
-                    <th>
+                    <th scope="row">
                         <label for="logtivity_should_store_user_id">Store User ID</label>
                         <?php if (has_filter('logtivity_should_store_user_id')): ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
@@ -123,8 +136,7 @@ echo logtivity_view('_admin-header', compact('options'));
                     </th>
 
                     <td>
-                        <input id="logtivity_should_store_user_id"
-                               name="logtivity_should_store_user_id"
+                        <input name="logtivity_should_store_user_id"
                                type="hidden"
                                value="0">
 
@@ -146,7 +158,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 </tr>
 
                 <tr class="user-user-login-wrap">
-                    <th>
+                    <th scope="row">
                         <label for="logtivity_should_log_profile_link">Store Users Profile Link</label>
                         <?php if (has_filter('logtivity_should_log_profile_link')): ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
@@ -154,8 +166,7 @@ echo logtivity_view('_admin-header', compact('options'));
                     </th>
 
                     <td>
-                        <input id="logtivity_should_log_profile_link"
-                               name="logtivity_should_log_profile_link"
+                        <input name="logtivity_should_log_profile_link"
                                type="hidden"
                                value="0">
 
@@ -177,7 +188,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 </tr>
 
                 <tr class="user-user-login-wrap">
-                    <th>
+                    <th scope="row">
                         <label for="logtivity_should_log_username">Store Users Username</label>
                         <?php if (has_filter('logtivity_should_log_username')): ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
@@ -185,8 +196,7 @@ echo logtivity_view('_admin-header', compact('options'));
                     </th>
 
                     <td>
-                        <input id="logtivity_should_log_username"
-                               name="logtivity_should_log_username"
+                        <input name="logtivity_should_log_username"
                                type="hidden"
                                value="0">
 
@@ -208,7 +218,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 </tr>
 
                 <tr class="user-user-login-wrap">
-                    <th>
+                    <th scope="row">
                         <label for="logtivity_should_store_ip">Store Users IP Address</label>
                         <?php if (has_filter('logtivity_should_store_ip')): ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
@@ -216,8 +226,7 @@ echo logtivity_view('_admin-header', compact('options'));
                     </th>
 
                     <td>
-                        <input id="logtivity_should_store_ip"
-                               name="logtivity_should_store_ip"
+                        <input name="logtivity_should_store_ip"
                                type="hidden"
                                value="0">
 
@@ -239,7 +248,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 </tr>
 
                 <tr class="user-user-login-wrap">
-                    <th>
+                    <th scope="row">
                         <label for="logtivity_app_verify_url">
                             Verify Site URL
                         </label>
@@ -249,8 +258,7 @@ echo logtivity_view('_admin-header', compact('options'));
                     </th>
 
                     <td>
-                        <input id="logtivity_app_verify_url"
-                               name="logtivity_app_verify_url"
+                        <input name="logtivity_app_verify_url"
                                type="hidden"
                                value="0">
 
@@ -273,7 +281,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 </tr>
 
                 <tr class="user-user-login-wrap">
-                    <th>
+                    <th scope="row">
                         <label for="logtivity_enable_debug_mode">
                             Enable debug mode (recommended off by default)
                         </label>
@@ -283,8 +291,7 @@ echo logtivity_view('_admin-header', compact('options'));
                     </th>
 
                     <td>
-                        <input id="logtivity_enable_debug_mode"
-                               name="logtivity_enable_debug_mode"
+                        <input name="logtivity_enable_debug_mode"
                                type="hidden"
                                value="0">
 
@@ -309,7 +316,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 </tr>
 
                 <tr class="user-user-login-wrap">
-                    <th>
+                    <th scope="row">
                         <label for="logtivity_disable_individual_logs">Disable Individual Logs</label>
                         <?php if (has_filter('logtivity_disable_individual_logs')): ?>
                             <div class="logtivity-constant">This option has been set in code.</div>

@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.3.7
+ * Version:           3.3.8
  * Text Domain:       logtivity
  * Requires at least: 4.7
  * Requires PHP:      7.4
@@ -14,7 +14,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -36,6 +36,10 @@
 // phpcs:disable PSR1.Files.SideEffects.FoundWithSymbols
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 
+if (!defined('LOGTIVITY_VERSION')) {
+    define('LOGTIVITY_VERSION', '3.3.8');
+}
+
 class Logtivity
 {
     public const ACCESS_LOGS     = 'view_logs';
@@ -44,7 +48,7 @@ class Logtivity
     /**
      * @var string
      */
-    protected string $version = '3.3.7';
+    protected string $version = LOGTIVITY_VERSION;
 
     /**
      * Integrations with other plugins
@@ -357,15 +361,6 @@ class Logtivity
         return Logtivity_Logger::log($action, $meta, $userId);
     }
 
-    /**
-     * @param array $error
-     *
-     * @return Logtivity_Error_Logger
-     */
-    public static function logError(array $error): Logtivity_Error_Logger
-    {
-        return new Logtivity_Error_Logger($error);
-    }
 
     /**
      * @param WP_Upgrader $upgraderObject
@@ -504,6 +499,10 @@ class Logtivity
             false,
             $this->version
         );
+        wp_localize_script('logtivity_admin_js', 'logtivityAdminA11y', [
+            'loadingLogs'   => __('Loading logs...', 'logtivity'),
+            'loadLogsError' => __('Unable to load logs. Please try again.', 'logtivity'),
+        ]);
     }
 }
 

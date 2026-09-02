@@ -23,10 +23,35 @@ jQuery(function($) {
             });
 
             $(document).on('keyup', function(e) {
-                if (e.key === 'Escape') {
+                if (e.key === 'Escape' && listenForCloseModal.modalOpen) {
                     listenForCloseModal.hideModal();
                 }
 
+            });
+
+            $(document).on('keydown', function(e) {
+                if (e.key !== 'Tab' || !listenForCloseModal.modalOpen) {
+                    return;
+                }
+
+                let $focusable = $('#logtivity-log-modal')
+                    .find('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+                    .filter(':visible');
+
+                if (!$focusable.length) {
+                    return;
+                }
+
+                let firstFocusable = $focusable[0],
+                    lastFocusable  = $focusable[$focusable.length - 1];
+
+                if (e.shiftKey && document.activeElement === firstFocusable) {
+                    e.preventDefault();
+                    lastFocusable.focus();
+                } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+                    e.preventDefault();
+                    firstFocusable.focus();
+                }
             });
 
             $(document).mouseup(function(e) {
@@ -49,22 +74,28 @@ jQuery(function($) {
             $('body').on('click', '.js-logtivity-view-log', function(e) {
                 e.preventDefault();
 
+                listenForViewLog.lastFocusedElement = this;
                 listenForViewLog.showLogModal($(this).next().html());
             });
         },
 
         showLogModal: function(modalContent) {
-            $('.logtivity-modal').addClass('active');
+            $('.logtivity-modal').attr('aria-hidden', 'false').addClass('active');
 
             this.modalOpen = true;
 
             $('.logtivity-modal-content').html(modalContent);
+            $('.js-logtivity-notice-dismiss').trigger('focus');
         },
 
         hideModal: function() {
-            $('.logtivity-modal').removeClass('active');
+            $('.logtivity-modal').attr('aria-hidden', 'true').removeClass('active');
 
             this.modalOpen = false;
+
+            if (this.lastFocusedElement) {
+                this.lastFocusedElement.focus();
+            }
         },
 
         listenForChange: function() {
@@ -89,11 +120,16 @@ jQuery(function($) {
         },
 
         loading: function() {
-            this.container.html(
-                '<div style="text-align: center; padding-bottom: 20px">'
-                + '<div class="spinner is-active" style="float:none;width:auto;height:auto;padding:10px 0 10px 50px;background-position:20px 0;"></div>'
-                + '</div>'
+            let $loading = $('<div role="status" style="text-align: center; padding-bottom: 20px">');
+
+            $loading.append(
+                '<div class="spinner is-active" style="float:none;width:auto;height:auto;padding:10px 0 10px 50px;background-position:20px 0;"></div>'
             );
+            $loading.append(
+                $('<span class="screen-reader-text">').text(logtivityAdminA11y.loadingLogs)
+            );
+
+            this.container.attr('aria-busy', 'true').empty().append($loading);
         },
 
         listenForPagination: function() {
@@ -118,10 +154,13 @@ jQuery(function($) {
                 type   : 'GET',
                 data   : filter.form.serialize(),
                 success: function(result) {
-                    filter.container.html(result.view);
+                    filter.container.attr('aria-busy', 'false').html(result.view);
                 },
                 error  : function(error) {
-                    console.log(error);
+                    let $error = $('<div class="notice notice-error" role="alert"><p></p></div>');
+
+                    $error.find('p').text(logtivityAdminA11y.loadLogsError);
+                    filter.container.attr('aria-busy', 'false').empty().append($error);
                 }
             });
         }

@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -100,7 +100,7 @@ $isWelcome = !($options['logtivity_site_api_key'] ?? false);
                 <li>
                     <a target="_blank"
                        href="https://logtivity.io/docs">
-                        <?php esc_html_e('View our documentation here', 'logtivity'); ?>
+                        <?php esc_html_e('View Logtivity documentation', 'logtivity'); ?>
                     </a>
                 </li>
             </ul>

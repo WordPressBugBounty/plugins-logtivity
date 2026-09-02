@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2024-2025 Logtivity. All rights reserved
+ * @copyright 2024-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -27,7 +27,7 @@
  */
 ?>
     <div class="logtivity-modal-strip">
-        <h2 class="title">Overview</h2>
+        <h2 id="logtivity-log-modal-title" class="title">Overview</h2>
         <button type="button" class="notice-dismiss js-logtivity-notice-dismiss">
             <span class="screen-reader-text">Dismiss this modal.</span>
         </button>
@@ -36,24 +36,24 @@
     <table style="margin-top: 0;" class="form-table logtivity-table">
         <tbody>
         <tr>
-            <th>Action</th>
+            <th scope="row">Action</th>
             <td><?php echo sanitize_text_field($log->action) ?></td>
         </tr>
         <?php if ($log->context): ?>
             <tr>
-                <th>Context</th>
+                <th scope="row">Context</th>
                 <td><?php echo sanitize_text_field($log->context) ?></td>
             </tr>
         <?php endif ?>
         <?php if ($log->action_user_id): ?>
             <tr>
-                <th>User ID</th>
+                <th scope="row">User ID</th>
                 <td><?php echo sanitize_text_field($log->action_user_id) ?></td>
             </tr>
         <?php endif ?>
         <?php if ($log->action_username): ?>
             <tr>
-                <th>Username</th>
+                <th scope="row">Username</th>
                 <td><?php echo sanitize_text_field($log->action_username) ?></td>
             </tr>
         <?php
@@ -63,7 +63,7 @@
             foreach (json_decode($log->action_user_meta) as $key => $value) :
                 ?>
                 <tr>
-                    <th><?php echo sanitize_text_field(ucfirst(str_replace('_', ' ', $key))) ?></th>
+                    <th scope="row"><?php echo sanitize_text_field(ucfirst(str_replace('_', ' ', $key))) ?></th>
                     <td>
                         <?php
                         if (is_array($value)) :
@@ -90,12 +90,12 @@
 
         if ($log->ip_address) : ?>
             <tr>
-                <th>IP</th>
+                <th scope="row">IP</th>
                 <td><?php echo sanitize_text_field($log->ip_address) ?></td>
             </tr>
         <?php endif ?>
         <tr>
-            <th>Date</th>
+            <th scope="row">Date</th>
             <td>
                 <?php echo logtivity_datetime($log->occurred_at); ?>
             </td>
@@ -117,7 +117,7 @@ if ($meta) :
         foreach ($meta as $key => $value) :
             ?>
             <tr>
-                <th>
+                <th scope="row">
                     <?php if (isset($value['key'])) : ?>
                         <strong><?php echo sanitize_text_field($value['key']) ?></strong>
                     <?php else : ?>

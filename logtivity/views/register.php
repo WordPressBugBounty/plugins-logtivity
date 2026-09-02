@@ -3,7 +3,7 @@
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
- * @copyright 2025 Logtivity. All rights reserved
+ * @copyright 2025-2026 Logtivity. All rights reserved
  * @license   https://www.gnu.org/licenses/gpl.html GNU/GPL
  *
  * This file is part of Logtivity.
@@ -73,7 +73,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 <table>
                     <tbody>
                     <tr class="user-user-login-wrap">
-                        <th>
+                        <th scope="row">
                             <label for="logtivity_team_api_key">Team API Key</label>
                         </th>
 
@@ -97,7 +97,7 @@ echo logtivity_view('_admin-header', compact('options'));
             </form>
         <?php endif; ?>
 
-        <div id="logtivity-register-response"></div>
+        <div id="logtivity-register-response" role="status" aria-live="polite" aria-atomic="true"></div>
     </div>
 </div>
 
