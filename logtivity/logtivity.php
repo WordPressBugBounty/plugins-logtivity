@@ -5,9 +5,9 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.3.8
+ * Version:           3.3.9
  * Text Domain:       logtivity
- * Requires at least: 4.7
+ * Requires at least: 6.6
  * Requires PHP:      7.4
  */
 
@@ -37,7 +37,7 @@
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 
 if (!defined('LOGTIVITY_VERSION')) {
-    define('LOGTIVITY_VERSION', '3.3.8');
+    define('LOGTIVITY_VERSION', '3.3.9');
 }
 
 class Logtivity
@@ -496,12 +496,16 @@ class Logtivity
         wp_enqueue_script(
             'logtivity_admin_js',
             plugin_dir_url(__FILE__) . 'assets/app.js',
-            false,
-            $this->version
+            ['jquery'],
+            $this->version,
+            true
         );
         wp_localize_script('logtivity_admin_js', 'logtivityAdminA11y', [
             'loadingLogs'   => __('Loading logs...', 'logtivity'),
             'loadLogsError' => __('Unable to load logs. Please try again.', 'logtivity'),
+        ]);
+        wp_localize_script('logtivity_admin_js', 'logtivityAdmin', [
+            'dismissNonce' => wp_create_nonce('logtivity_dismiss_notice'),
         ]);
     }
 }

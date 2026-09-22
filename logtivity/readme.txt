@@ -1,15 +1,15 @@
 === Activity Logs, User Activity Tracking, Multisite Activity Log from Logtivity ===
 
 Contributors: logtivity, stevejburge
-Tags: activity log, event monitoring, user activity, activity logs, logs, log data, site activities, site events
+Tags: activity log, user activity, audit log, event monitoring, logs
 Requires at least: 6.6
-Tested up to: 7.0
-Stable tag: 3.3.8
+Tested up to: 7.1
+Stable tag: 3.3.9
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Logtivity is the activity log service for WordPress admins. Logtivity is a unified activity log platform that tracks activity across all your WordPress sites.
+Logtivity is the activity log service for WordPress admins. Track user activity and site events across every WordPress site you maintain.
 
 == Description ==
 
@@ -251,6 +251,12 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 * Log tivity, loggtivity, logg tivity (all incorrect)
 
 == Changelog ==
+
+= 3.3.9 22 Sep 2026 =
+  * Update Code Snippet Logger for newest version
+  * Stricter test for production/development configurations
+  * Improved plugin status logging
+  * Various security/accessibility fixes
 
 = 3.3.8 02 Sep 2026 =
   * Security updates / sanitize all inputs

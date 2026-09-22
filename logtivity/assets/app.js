@@ -176,9 +176,10 @@ jQuery(function($) {
                     $.ajax(ajaxurl, {
                         type: 'POST',
                         data: {
-                            action       : 'logtivity_dismiss_notice',
-                            type         : type,
-                            dismiss_until: dismissUntil,
+                            action      : 'logtivity_dismiss_notice',
+                            _ajax_nonce : logtivityAdmin.dismissNonce,
+                            postType    : type,
+                            dismissUntil: dismissUntil,
                         }
                     });
                 }

@@ -251,13 +251,18 @@ class Logtivity_Options
         $setting = $this->settings[$key] ?? null;
 
         if ($setting) {
-            $method = $setting['rule'] ?? null;
+            switch ($setting['rule'] ?? null) {
+                case 'is_bool':
+                    return is_bool($value) || in_array($value, [0, 1, '0', '1', ''], true);
 
-            if ($method == 'is_bool') {
-                return $method((bool)$value);
+                case 'is_array':
+                    return is_array($value);
+
+                case 'is_string':
+                    return is_string($value);
             }
 
-            return $method($value);
+            return false;
         }
 
         return true;

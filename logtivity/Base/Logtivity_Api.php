@@ -130,7 +130,18 @@ class Logtivity_Api
                 'cookies'     => [],
             ];
 
-            // @TODO: Switch to Logtivity_Response class to get standardized responses
+            /**
+             * This request must not be cached. It writes a log entry to the API rather
+             * than reading a cacheable resource, so a cached response would silently
+             * drop logs. The default path is also non-blocking with a 0.01s timeout,
+             * so it does not hold up the page load.
+             *
+             * Settings check-ins are already rate limited by
+             * Logtivity_Options::shouldCheckInWithApi(), which gates on the
+             * logtivity_last_settings_check_in_at option.
+             *
+             * @TODO: Switch to Logtivity_Response class to get standardized responses
+             */
             $response = wp_remote_request($this->getEndpoint($url), $request);
             if ($waitForResponse && $this->notUpdatingWidgetInCustomizer()) {
                 // We waited and received a response
@@ -204,7 +215,8 @@ class Logtivity_Api
      */
     protected function ready(): bool
     {
-        return ($this->getApiKey())
+        return logtivity_url_environment_mismatch() == false
+            && ($this->getApiKey())
             && logtivity_has_site_url_changed() == false
             && (
                 $this->ignoreStatus

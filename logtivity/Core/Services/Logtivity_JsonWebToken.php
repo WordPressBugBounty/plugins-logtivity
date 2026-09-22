@@ -147,7 +147,10 @@ class Logtivity_JsonWebToken
             $input   .= str_repeat('=', $padding);
         }
 
-        return base64_decode(strtr($input, '-_', '+/'));
+        // JWT segments use base64url encoding, so translate to standard Base64 before decoding.
+        $decoded = base64_decode(strtr($input, '-_', '+/'), true);
+
+        return false === $decoded ? '' : $decoded;
     }
 
     /**

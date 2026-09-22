@@ -138,8 +138,23 @@ if (function_exists('logtivity_dd') == false) {
      */
     function logtivity_is_production(): bool
     {
-        return logtivity_get_production_app_url() == logtivity_get_app_url()
-            || logtivity_get_production_api_url() == logtivity_get_api_url();
+        return logtivity_get_app_url() === logtivity_get_production_app_url()
+            && logtivity_get_api_url() === logtivity_get_production_api_url();
+    }
+
+    /**
+     * True when exactly one of the app/api URLs has been overridden away from
+     * production. This is a configuration error: the two endpoints must belong
+     * to the same environment.
+     *
+     * @return bool
+     */
+    function logtivity_url_environment_mismatch(): bool
+    {
+        $appIsProduction = logtivity_get_app_url() === logtivity_get_production_app_url();
+        $apiIsProduction = logtivity_get_api_url() === logtivity_get_production_api_url();
+
+        return $appIsProduction !== $apiIsProduction;
     }
 
     /**

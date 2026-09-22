@@ -74,8 +74,10 @@ class Logtivity_Wp_User
     public function findByUserMeta(string $field, $value): self
     {
         $users = get_users([
-            'meta_key'   => $field,
-            'meta_value' => $value,
+            'meta_key'    => $field,
+            'meta_value'  => $value,
+            'number'      => 1,
+            'count_total' => false,
         ]);
 
         $this->user = $users ? array_shift($users) : null;

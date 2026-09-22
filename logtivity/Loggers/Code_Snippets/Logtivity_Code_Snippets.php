@@ -22,12 +22,14 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+use Code_Snippets\Model;
 use Code_Snippets\Snippet;
 
 class Logtivity_Code_Snippets
 {
     public function __construct()
     {
+        add_action('code_snippets/trash_snippet', [$this, 'snippetTrashed'], 10, 2);
         add_action('code_snippets/delete_snippet', [$this, 'snippetDeleted'], 10, 2);
         add_action('code_snippets/create_snippet', [$this, 'snippetCreated'], 10, 2);
         add_action('code_snippets/update_snippet', [$this, 'snippetUpdated'], 10, 2);
@@ -36,27 +38,52 @@ class Logtivity_Code_Snippets
     }
 
     /**
-     * @param int   $snippetId
-     * @param ?bool $network
+     * @param Model\Snippet $snippet
      *
      * @return void
      */
-    public function snippetDeleted(int $snippetId, ?bool $network): void
+    public function snippetTrashed($snippet): void
     {
-        Logtivity::log()
-            ->setAction('Code Snippet Deleted')
-            ->setContext($snippetId)
-            ->addMeta('Network', $network ? 'Yes' : 'No')
-            ->send();
+        $logger = Logtivity::log()
+            ->setAction('Code Snippet Trashed')
+            ->setContext($snippet->id);
+
+        $this->logWithMeta($logger, $snippet);
     }
 
     /**
-     * @param Snippet $snippet
+     * @param int|Model\Snippet $snippet
+     * @param ?bool             $network
      *
      * @return void
      */
-    public function snippetCreated(Snippet $snippet): void
+    public function snippetDeleted($snippet, $network): void
     {
+        $snippetId = $snippet->id ?? $snippet;
+
+        $logger = Logtivity::log()
+            ->setAction('Code Snippet Deleted')
+            ->setContext($snippetId);
+
+        if (is_object($snippet)) {
+            $this->logWithMeta($logger, $snippet);
+
+        } else {
+            $logger
+                ->addMeta('Network', $network ? 'Yes' : 'No')
+                ->send();
+        }
+    }
+
+    /**
+     * @param Snippet|Model\Snippet $snippet
+     * @param string                $table
+     *
+     * @return void
+     */
+    public function snippetCreated($snippet, $table): void
+    {
+        // Will not work in newer versions of Code Snippets
         $cloneId = sanitize_text_field($_GET['action'] ?? null) == 'clone'
             ? sanitize_text_field($_GET['id'] ?? null)
             : null;
@@ -64,31 +91,34 @@ class Logtivity_Code_Snippets
         $logger = Logtivity::log()
             ->setAction('Code Snippet Created')
             ->setContext($snippet->id)
-            ->addMetaIf($cloneId !== null, 'Cloned From ID', $cloneId);
+            ->addMetaIf($cloneId !== null, 'Cloned From ID', $cloneId)
+            ->addMetaIf((bool)$table, 'Table', $table);
 
         $this->logWithMeta($logger, $snippet);
     }
 
     /**
-     * @param Snippet $snippet
+     * @param Snippet|Model\Snippet $snippet
+     * @param string                $table
      *
      * @return void
      */
-    public function snippetUpdated(Snippet $snippet): void
+    public function snippetUpdated($snippet, $table): void
     {
         $logger = Logtivity::log()
             ->setAction('Code Snippet Updated')
-            ->setContext($snippet->id);
+            ->setContext($snippet->id)
+            ->addMetaIf((bool)$table, 'Table', $table);
 
         $this->logWithMeta($logger, $snippet);
     }
 
     /**
-     * @param Snippet $snippet
+     * @param Snippet|Model\Snippet $snippet
      *
      * @return void
      */
-    public function snippetActivated(Snippet $snippet): void
+    public function snippetActivated($snippet): void
     {
         Logtivity::log()
             ->setAction('Code Snippet Activated')
@@ -112,12 +142,12 @@ class Logtivity_Code_Snippets
     }
 
     /**
-     * @param Logtivity_Logger $logger
-     * @param ?Snippet         $snippet
+     * @param Logtivity_Logger      $logger
+     * @param Snippet|Model\Snippet $snippet
      *
      * @return void
      */
-    public function logWithMeta(Logtivity_Logger $logger, ?Snippet $snippet = null): void
+    public function logWithMeta(Logtivity_Logger $logger, object $snippet): void
     {
         $logger
             ->addMeta('Snippet Name', $snippet->name)

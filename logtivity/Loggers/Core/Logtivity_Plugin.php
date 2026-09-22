@@ -25,20 +25,35 @@
 class Logtivity_Plugin extends Logtivity_Abstract_Logger
 {
     /**
+     * Plugin data captured before a destructive file operation — a deletion, or
+     * an update that overwrites the files — keyed by plugin slug. Read back once
+     * the operation completes, when the on-disk copy is gone or already replaced.
+     *
      * @var array
      */
-    protected array $savedPluginData = [];
+    protected array $capturedPluginData = [];
 
     /**
      * @inheritDoc
      */
     protected function registerHooks(): void
     {
-        add_action('activated_plugin', [$this, 'pluginActivated'], 10, 2);
-        add_action('deactivated_plugin', [$this, 'pluginDeactivated'], 10, 2);
+        /*
+         * Track the active plugin lists directly rather than the activated_plugin/
+         * deactivated_plugin actions. Those actions are skipped when a plugin is
+         * (de)activated silently (the $silent argument to activate_plugin() /
+         * deactivate_plugins()), whereas the underlying option is always written.
+         * Diffing the option therefore catches every status change, silent or not.
+         */
+        add_action('update_option_active_plugins', [$this, 'activePluginsUpdated'], 10, 2);
+        add_action('add_option_active_plugins', [$this, 'activePluginsAdded'], 10, 2);
+        add_action('update_site_option_active_sitewide_plugins', [$this, 'networkPluginsUpdated'], 10, 3);
+        add_action('add_site_option_active_sitewide_plugins', [$this, 'networkPluginsAdded'], 10, 2);
+
         add_action('delete_plugin', [$this, 'savePluginData'], 10, 1);
         add_action('deleted_plugin', [$this, 'pluginDeleted'], 10, 2);
 
+        add_filter('upgrader_pre_install', [$this, 'savePreUpdateVersion'], 10, 2);
         add_action('upgrader_process_complete', [$this, 'upgradeProcessComplete'], 10, 2);
 
         add_filter('editable_extensions', [$this, 'pluginFileModified'], 10, 2);
@@ -53,8 +68,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
     {
         if (is_string($plugin)) {
             $slug       = $plugin;
-            $pluginData = $this->savedPluginData[$plugin]
-                ?? get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin, false, false);
+            $pluginData = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin, false, false);
 
         } elseif ($plugin instanceof Plugin_Upgrader) {
             if ($slug = $plugin->plugin_info()) {
@@ -97,25 +111,156 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
     }
 
     /**
-     * @param string $slug
-     * @param bool   $networkWide
+     * The active_plugins option was updated (single site).
+     *
+     * @param mixed $oldValue
+     * @param mixed $value
      *
      * @return void
      */
-    public function pluginActivated(string $slug, bool $networkWide): void
+    public function activePluginsUpdated($oldValue, $value): void
     {
-        $this->pluginStateChanged('Activated', $slug, $networkWide);
+        $this->logPluginListChanges((array)$oldValue, (array)$value, false);
     }
 
     /**
-     * @param string $slug
-     * @param bool   $networkDeactivating
+     * The active_plugins option was created (single site, first activation).
+     *
+     * @param string $option
+     * @param mixed  $value
      *
      * @return void
      */
-    public function pluginDeactivated(string $slug, bool $networkDeactivating): void
+    public function activePluginsAdded(string $option, $value): void
     {
-        $this->pluginStateChanged('Deactivated', $slug, $networkDeactivating);
+        $this->logPluginListChanges([], (array)$value, false);
+    }
+
+    /**
+     * The active_sitewide_plugins network option was updated (multisite).
+     *
+     * The value is keyed by plugin slug, so compare against the keys.
+     *
+     * @param string $option
+     * @param mixed  $value
+     * @param mixed  $oldValue
+     *
+     * @return void
+     */
+    public function networkPluginsUpdated(string $option, $value, $oldValue): void
+    {
+        $this->logPluginListChanges(
+            array_keys((array)$oldValue),
+            array_keys((array)$value),
+            true
+        );
+    }
+
+    /**
+     * The active_sitewide_plugins network option was created (multisite).
+     *
+     * @param string $option
+     * @param mixed  $value
+     *
+     * @return void
+     */
+    public function networkPluginsAdded(string $option, $value): void
+    {
+        $this->logPluginListChanges([], array_keys((array)$value), true);
+    }
+
+    /**
+     * Diff a previous and current list of active plugin slugs and log each
+     * activation/deactivation. A set-based diff means a pure reordering of the
+     * list (e.g. Logtivity moving itself to load first) produces no events.
+     *
+     * @param string[] $previous
+     * @param string[] $current
+     * @param bool     $networkWide
+     *
+     * @return void
+     */
+    protected function logPluginListChanges(array $previous, array $current, bool $networkWide): void
+    {
+        foreach (array_diff($current, $previous) as $slug) {
+            $this->pluginStateChanged('Activated', $slug, $networkWide);
+        }
+
+        foreach (array_diff($previous, $current) as $slug) {
+            /*
+             * A plugin whose files no longer exist was deleted, not merely
+             * deactivated. Deleting an active plugin drops it from the active
+             * list too, but that deletion is already reported via the
+             * deleted_plugin hook, so skip the redundant deactivation event.
+             */
+            if ($this->pluginFileExists($slug) == false) {
+                continue;
+            }
+
+            $this->pluginStateChanged('Deactivated', $slug, $networkWide);
+        }
+    }
+
+    /**
+     * Whether the plugin's main file still exists on disk.
+     *
+     * @param string $slug
+     *
+     * @return bool
+     */
+    protected function pluginFileExists(string $slug): bool
+    {
+        return is_readable(WP_PLUGIN_DIR . '/' . $slug);
+    }
+
+    /**
+     * Capture a plugin's data before its files are removed or overwritten, so it
+     * can still be reported once the on-disk copy is gone or replaced. Keyed by
+     * slug and captured at most once per plugin per request.
+     *
+     * @param string $slug
+     *
+     * @return void
+     */
+    protected function capturePluginData(string $slug): void
+    {
+        if (
+            isset($this->capturedPluginData[$slug]) == false
+            && $this->pluginFileExists($slug)
+        ) {
+            if ($pluginData = $this->getPluginData($slug)) {
+                $this->capturedPluginData[$slug] = $pluginData;
+            }
+        }
+    }
+
+    /**
+     * Snapshot the version of every installed plugin. Used when an install does
+     * not name the plugin being written (an upload, including one overwriting an
+     * existing plugin), so the prior version can still be resolved by slug once
+     * the install completes. Runs while the old files are still on disk, and
+     * never overwrites data already captured for a specific plugin.
+     *
+     * @return void
+     */
+    protected function captureAllPluginData(): void
+    {
+        if (function_exists('get_plugins') == false) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        foreach (get_plugins() as $slug => $pluginData) {
+            if (isset($this->capturedPluginData[$slug]) == false) {
+                $this->capturedPluginData[$slug] = array_merge(
+                    [
+                        'Name'    => 'Not Set',
+                        'Slug'    => $slug,
+                        'Version' => 'Not Set',
+                    ],
+                    $pluginData
+                );
+            }
+        }
     }
 
     /**
@@ -125,11 +270,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
      */
     public function savePluginData(string $plugin): void
     {
-        if (empty($this->savedPluginData)) {
-            if ($pluginData = $this->getPluginData($plugin)) {
-                $this->savedPluginData[$plugin] = $pluginData;
-            }
-        }
+        $this->capturePluginData($plugin);
     }
 
     /**
@@ -140,7 +281,9 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
      */
     public function pluginDeleted(string $pluginFile, bool $deleted): void
     {
-        if ($plugin = $this->getPluginData($pluginFile)) {
+        $plugin = $this->capturedPluginData[$pluginFile] ?? $this->getPluginData($pluginFile);
+
+        if ($plugin) {
             Logtivity::log()
                 ->setAction('Plugin Deleted')
                 ->setContext($plugin['Name'])
@@ -149,6 +292,30 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
                 ->addMeta('Deletion Successful', $deleted ? 'Yes' : 'No')
                 ->send();
         }
+    }
+
+    /**
+     * Capture plugin data before an install/update overwrites the files, so the
+     * old version can be logged once it completes. Fires while the old files are
+     * still on disk. Updates name the plugin in $hookExtra, so only that one is
+     * captured; uploads (including one overwriting an existing plugin) do not,
+     * so every installed plugin is snapshotted and the replaced one resolved by
+     * slug at completion. Registered as a filter, so the value is returned as-is.
+     *
+     * @param bool|WP_Error $response
+     * @param array         $hookExtra
+     *
+     * @return bool|WP_Error
+     */
+    public function savePreUpdateVersion($response, array $hookExtra)
+    {
+        if ($slug = $hookExtra['plugin'] ?? null) {
+            $this->capturePluginData($slug);
+        } else {
+            $this->captureAllPluginData();
+        }
+
+        return $response;
     }
 
     /**
@@ -202,12 +369,18 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
 
         foreach ($plugins as $plugin) {
             if ($pluginData = $this->getPluginData($plugin)) {
-                Logtivity::log()
+                $log = Logtivity::log()
                     ->setAction('Plugin ' . $action)
                     ->setContext($pluginData['Name'])
                     ->addMeta('Slug', $pluginData['Slug'])
-                    ->addMeta('Version', $pluginData['Version'])
-                    ->addMeta('Bulk', $bulk ? 'Yes' : 'No')
+                    ->addMeta('Version', $pluginData['Version']);
+
+                $oldVersion = $this->capturedPluginData[$pluginData['Slug']]['Version'] ?? null;
+                if ($oldVersion) {
+                    $log->addMeta('Old Version', $oldVersion);
+                }
+
+                $log->addMeta('Bulk', $bulk ? 'Yes' : 'No')
                     ->send();
             }
         }

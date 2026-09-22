@@ -62,6 +62,11 @@ class Logtivity_Response
 
         $api = new Logtivity_Api();
 
+        /**
+         * This request must not be cached. Like Logtivity_Api::makeRequest(), it writes
+         * to the API rather than reading a cacheable resource, and defaults to a
+         * non-blocking 0.01s timeout.
+         */
         $this->response = wp_remote_request($api->getEndpoint($url), $this->request);
 
         $this->processResponse();

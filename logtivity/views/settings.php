@@ -52,7 +52,20 @@ echo logtivity_view('_admin-header', compact('options'));
             </div>
         <?php endif;
 
-        if (logtivity_is_production() == false) : ?>
+        if (logtivity_url_environment_mismatch()) : ?>
+            <div class="logtivity-notice logtivity-notice-danger">
+                <h2>Logtivity is misconfigured and logging has stopped.</h2>
+                <div>
+                    Your App URL (<?php echo esc_html(logtivity_get_app_url()); ?>)
+                    and API URL (<?php echo esc_html(logtivity_get_api_url()); ?>)
+                    point to different environments. Neither
+                    <code>LOGTIVITY_APP_URL</code> or <code>LOGTIVITY_API_URL</code>
+                    constant should be set, or both must be set to the same
+                    non-production environment. No logs will be sent until this is
+                    corrected.
+                </div>
+            </div>
+        <?php elseif (logtivity_is_production() == false) : ?>
             <div class="logtivity-notice logtivity-notice-warning">
                 <h2>This site is not sending logs to the production application.</h2>
                 <div>

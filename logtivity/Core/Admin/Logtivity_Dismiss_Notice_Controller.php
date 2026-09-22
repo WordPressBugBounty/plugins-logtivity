@@ -37,7 +37,6 @@ class Logtivity_Dismiss_Notice_Controller
 
     public function __construct()
     {
-        add_action('wp_ajax_nopriv_logtivity_dismiss_notice', [$this, 'dismiss']);
         add_action('wp_ajax_logtivity_dismiss_notice', [$this, 'dismiss']);
     }
 
@@ -54,6 +53,8 @@ class Logtivity_Dismiss_Notice_Controller
      */
     public function dismiss(): void
     {
+        check_ajax_referer('logtivity_dismiss_notice');
+
         if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
             wp_die(__('You do not have sufficient permissions to access this page.'));
         }
