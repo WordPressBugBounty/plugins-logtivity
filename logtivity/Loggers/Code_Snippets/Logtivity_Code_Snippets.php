@@ -84,8 +84,17 @@ class Logtivity_Code_Snippets
     public function snippetCreated($snippet, $table): void
     {
         // Will not work in newer versions of Code Snippets
-        $cloneId = sanitize_text_field($_GET['action'] ?? null) == 'clone'
-            ? sanitize_text_field($_GET['id'] ?? null)
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Passive logger reads Code Snippets request state after that plugin handles auth.
+        $action = isset($_GET['action'])
+            ? sanitize_text_field(wp_unslash($_GET['action']))
+            : null;
+        $id = isset($_GET['id'])
+            ? sanitize_text_field(wp_unslash($_GET['id']))
+            : null;
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+        $cloneId = $action == 'clone'
+            ? $id
             : null;
 
         $logger = Logtivity::log()

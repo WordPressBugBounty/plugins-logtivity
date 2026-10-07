@@ -173,7 +173,8 @@ class Logtivity_User extends Logtivity_Abstract_Logger
      */
     public function retrieve_password($username): void
     {
-        if ($user = get_user_by('login', $username)) {
+        $user = get_user_by('login', $username);
+        if ($user) {
             $this->saveOriginalUser(null, $user->ID);
         }
 

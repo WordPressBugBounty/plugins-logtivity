@@ -37,24 +37,24 @@
         <tbody>
         <tr>
             <th scope="row">Action</th>
-            <td><?php echo sanitize_text_field($log->action) ?></td>
+            <td><?php echo esc_html($log->action) ?></td>
         </tr>
         <?php if ($log->context): ?>
             <tr>
                 <th scope="row">Context</th>
-                <td><?php echo sanitize_text_field($log->context) ?></td>
+                <td><?php echo esc_html($log->context) ?></td>
             </tr>
         <?php endif ?>
         <?php if ($log->action_user_id): ?>
             <tr>
                 <th scope="row">User ID</th>
-                <td><?php echo sanitize_text_field($log->action_user_id) ?></td>
+                <td><?php echo esc_html($log->action_user_id) ?></td>
             </tr>
         <?php endif ?>
         <?php if ($log->action_username): ?>
             <tr>
                 <th scope="row">Username</th>
-                <td><?php echo sanitize_text_field($log->action_username) ?></td>
+                <td><?php echo esc_html($log->action_username) ?></td>
             </tr>
         <?php
         endif;
@@ -63,23 +63,23 @@
             foreach (json_decode($log->action_user_meta) as $key => $value) :
                 ?>
                 <tr>
-                    <th scope="row"><?php echo sanitize_text_field(ucfirst(str_replace('_', ' ', $key))) ?></th>
+                    <th scope="row"><?php echo esc_html(ucfirst(str_replace('_', ' ', $key))) ?></th>
                     <td>
                         <?php
-                        if (is_array($value)) :
+                        if (is_array($value) || is_object($value)) :
                             ?>
-                            <pre class="mb-0"><?php var_export($value) ?></pre>
+                            <pre class="mb-0"><?php echo esc_html(print_r($value, true)); ?></pre>
                         <?php
-                        elseif (substr($value, 0, 4) === 'http') :
+                        elseif (is_string($value) && substr($value, 0, 4) === 'http') :
                             ?>
                             <a target="_blank"
                                rel="noopener noreferrer"
-                               href="<?php echo sanitize_text_field($value) ?>">
-                                <?php echo sanitize_text_field($value) ?>
+                               href="<?php echo esc_url($value) ?>">
+                                <?php echo esc_html($value) ?>
                             </a>
                         <?php
                         else :
-                            echo sanitize_text_field($value);
+                            echo esc_html((string)$value);
                         endif;
                         ?>
                     </td>
@@ -91,13 +91,13 @@
         if ($log->ip_address) : ?>
             <tr>
                 <th scope="row">IP</th>
-                <td><?php echo sanitize_text_field($log->ip_address) ?></td>
+                <td><?php echo esc_html($log->ip_address) ?></td>
             </tr>
         <?php endif ?>
         <tr>
             <th scope="row">Date</th>
             <td>
-                <?php echo logtivity_datetime($log->occurred_at); ?>
+                <?php echo esc_html(logtivity_datetime($log->occurred_at)); ?>
             </td>
         </tr>
         </tbody>
@@ -119,9 +119,9 @@ if ($meta) :
             <tr>
                 <th scope="row">
                     <?php if (isset($value['key'])) : ?>
-                        <strong><?php echo sanitize_text_field($value['key']) ?></strong>
+                        <strong><?php echo esc_html($value['key']) ?></strong>
                     <?php else : ?>
-                        <strong><?php echo sanitize_text_field($key) ?></strong>
+                        <strong><?php echo esc_html($key) ?></strong>
                     <?php endif ?>
                 </th>
 
@@ -131,19 +131,19 @@ if ($meta) :
 
                     if (is_array($value) || is_object($value)) :
                         ?>
-                        <pre><?php var_export($value) ?></pre>
+                        <pre><?php echo esc_html(print_r($value, true)); ?></pre>
                     <?php
-                    elseif (preg_match('#^https?://#', ltrim($value))) :
+                    elseif (is_string($value) && preg_match('#^https?://#', ltrim($value))) :
                         ?>
                         <a target="_blank"
                            rel="noopener noreferrer"
-                           href="<?php echo sanitize_text_field($value) ?>">
+                           href="<?php echo esc_url($value) ?>">
                             Visit Link
                             <i class="ml-1 small fas fa-external-link-alt"></i>
                         </a>
                     <?php
                     else :
-                        echo sanitize_text_field($value);
+                        echo esc_html((string)$value);
                     endif;
                     ?>
                 </td>

@@ -74,6 +74,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
                 }
             } catch (Throwable $e) {
                 // Ignore
+                unset($e);
             }
         } else {
             $log->setContext($args['key']);
@@ -99,6 +100,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
                     $log->addMeta('Expiration Date', date('M d Y', $result['expires']));
                 } catch (Throwable $e) {
                     // Ignore
+                    unset($e);
                 }
             }
 
@@ -131,7 +133,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             // Attempt to grab the URL from the user agent if no URL is specified
             $domain = array_map(
                 'trim',
-                explode(';', sanitize_text_field($_SERVER['HTTP_USER_AGENT'] ?? ''))
+                explode(';', sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'] ?? '')))
             );
 
             if (!empty($domain[1])) {
@@ -154,6 +156,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             }
         } catch (Throwable $e) {
             // Ignore
+            unset($e);
         }
 
         $log->addMeta('Site', $this->deactivatingLicenseArgs['url'] ?? $domain ?? null)
@@ -240,6 +243,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             $log->addMeta('New Expiration Date', date('M d Y', $new_expiration));
         } catch (Throwable $e) {
             // Ignore
+            unset($e);
         }
 
         $log->send();
@@ -255,14 +259,20 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
      */
     public function siteDeactivated()
     {
-        if (!wp_verify_nonce(sanitize_text_field($_GET['_wpnonce'] ?? null), 'edd_deactivate_site_nonce')) {
+        $nonce = isset($_GET['_wpnonce'])
+            ? sanitize_text_field(wp_unslash($_GET['_wpnonce']))
+            : '';
+
+        if (!wp_verify_nonce($nonce, 'edd_deactivate_site_nonce')) {
             return;
         }
 
-        $license_id = absint(sanitize_text_field($_GET['license']));
+        $license_id = isset($_GET['license'])
+            ? absint(wp_unslash($_GET['license']))
+            : 0;
         $license    = edd_software_licensing()->get_license($license_id);
 
-        if ($license_id !== $license->ID) {
+        if (!$license || $license_id !== $license->ID) {
             return;
         }
 
@@ -270,8 +280,9 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             return;
         }
 
-        $site = absint(sanitize_text_field($_GET['site_id'] ?? null))
-            ?: urldecode(sanitize_text_field($_GET['site_url'] ?? ''));
+        $site_id  = isset($_GET['site_id']) ? absint(wp_unslash($_GET['site_id'])) : 0;
+        $site_url = isset($_GET['site_url']) ? esc_url_raw(wp_unslash($_GET['site_url'])) : '';
+        $site     = $site_id ?: urldecode($site_url);
 
         if ($site) {
 
@@ -291,6 +302,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
                 }
             } catch (Throwable $e) {
                 // Ignore
+                unset($e);
             }
 
             $log->send();
@@ -307,18 +319,30 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
      */
     public function siteAdded()
     {
-        if (!wp_verify_nonce(sanitize_text_field($_POST['edd_add_site_nonce'] ?? null), 'edd_add_site_nonce')) {
+        $nonce = isset($_POST['edd_add_site_nonce'])
+            ? sanitize_text_field(wp_unslash($_POST['edd_add_site_nonce']))
+            : '';
+
+        if (!wp_verify_nonce($nonce, 'edd_add_site_nonce')) {
             return;
         }
 
-        if (sanitize_text_field($_POST['license_id'] ?? null) && empty($_POST['license'])) {
+        $license = isset($_POST['license'])
+            ? sanitize_text_field(wp_unslash($_POST['license']))
+            : '';
+        $legacy_license = isset($_POST['license_id'])
+            ? sanitize_text_field(wp_unslash($_POST['license_id']))
+            : '';
+
+        if ($legacy_license && empty($license)) {
             // In 3.5, we switched from checking for license_id to just license. Fallback check for backwards compatibility
-            $_POST['license'] = sanitize_text_field($_POST['license_id']);
+            $license = $legacy_license;
         }
 
-        $license_id = absint($_POST['license']);
+        $license_id = absint($license);
         $license    = edd_software_licensing()->get_license($license_id);
-        if ($license_id !== $license->ID) {
+
+        if (!$license || $license_id !== $license->ID) {
             return;
         }
 
@@ -326,7 +350,9 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             return;
         }
 
-        $site_url = sanitize_text_field($_POST['site_url']);
+        $site_url = isset($_POST['site_url'])
+            ? esc_url_raw(wp_unslash($_POST['site_url']))
+            : '';
 
         if ($license->is_at_limit() && !current_user_can('manage_licenses')) {
             // The license is at its activation limit so stop and show an error
@@ -353,6 +379,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             }
         } catch (Throwable $e) {
             // Ignore
+            unset($e);
         }
 
         $log->send();

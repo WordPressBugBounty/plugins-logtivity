@@ -48,21 +48,24 @@
         <?php foreach ($logs as $key => $log) : ?>
 
             <tr>
-                <td><?php echo sanitize_text_field($log->action) ?></td>
-                <td><?php echo sanitize_text_field($log->context) ?></td>
+                <td><?php echo esc_html($log->action) ?></td>
+                <td><?php echo esc_html($log->context) ?></td>
                 <td class="break-long">
-                    <div style="margin-bottom: 5px;"><?php echo sanitize_text_field($log->action_username ?? $log->action_user_id) ?></div>
-                    <?php echo sanitize_text_field($log->ip_address) ?>
+                    <div style="margin-bottom: 5px;"><?php echo esc_html($log->action_username ?? $log->action_user_id) ?></div>
+                    <?php echo esc_html($log->ip_address) ?>
                 </td>
                 <td>
                     <small>
-                        <?php echo logtivity_datetime($log->occurred_at); ?>
+                        <?php echo esc_html(logtivity_datetime($log->occurred_at)); ?>
                     </small>
                 </td>
                 <td class="text-center">
                     <button type="button" class="button js-logtivity-view-log" aria-haspopup="dialog" aria-controls="logtivity-log-modal" aria-label="<?php esc_attr_e('View log details', 'logtivity'); ?>">View</button>
                     <div style="display: none;" class="js-modal-content">
-                        <?php echo logtivity_view('_log-show', ['log' => $log,]) ?>
+                        <?php
+                        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
+                        echo logtivity_view('_log-show', ['log' => $log,]);
+                        ?>
                     </div>
                 </td>
             </tr>
@@ -70,7 +73,7 @@
         <?php endforeach ?>
     <?php elseif (isset($message)) : ?>
         <tr>
-            <td colspan="5"><?php echo sanitize_text_field($message) ?></td>
+            <td colspan="5"><?php echo esc_html($message) ?></td>
         </tr>
     <?php else : ?>
         <tr>

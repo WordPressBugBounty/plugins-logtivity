@@ -31,12 +31,12 @@ if(! isset($options['logtivity_enable_white_label_mode']) || $options['logtivity
 
 	<?php if (! $white_label): ?>
 		<div class="logtivity-header">
-			<img alt="Logtivity" src="<?php echo plugin_dir_url('logtivity.php') ?>logtivity/assets/logtivity-logo-white.svg">
+			<img alt="Logtivity" src="<?php echo esc_url(plugin_dir_url('logtivity.php') . 'logtivity/assets/logtivity-logo-white.svg') ?>">
 		</div>
 	<?php endif ?>
 
 	<div id="poststuff">
 
-		<div id="post-body" class="metabox-holder<?php echo ! $white_label ? ' columns-2' : '' ?>">
+		<div id="post-body" class="<?php echo esc_attr('metabox-holder' . (! $white_label ? ' columns-2' : '')) ?>">
 
 			<div id="post-body-content">

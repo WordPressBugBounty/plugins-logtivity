@@ -61,13 +61,13 @@ class Logtivity_Term extends Logtivity_Abstract_Logger
      */
     public function saveOriginalData($termId, $ttId, $taxonomy): void
     {
-        if (
-            in_array($taxonomy, $this->ignoreTaxonomies) == false
-            && ($term = get_term($termId, $taxonomy))
-            && $term instanceof WP_Term
-        ) {
-            $this->terms[$termId] = get_object_vars($term);
-            $this->metas[$termId] = $this->getMetadata('term', $termId);
+        if (in_array($taxonomy, $this->ignoreTaxonomies) == false) {
+            $term = get_term($termId, $taxonomy);
+
+            if ($term && $term instanceof WP_Term) {
+                $this->terms[$termId] = get_object_vars($term);
+                $this->metas[$termId] = $this->getMetadata('term', $termId);
+            }
         }
     }
 
@@ -82,7 +82,8 @@ class Logtivity_Term extends Logtivity_Abstract_Logger
     public function saved_term($termId, $ttId, $taxonomy, $update): void
     {
         if (in_array($taxonomy, $this->ignoreTaxonomies) == false) {
-            if (($term = get_term($termId, $taxonomy)) && $term instanceof WP_Term) {
+            $term = get_term($termId, $taxonomy);
+            if ($term && $term instanceof WP_Term) {
                 $term = get_object_vars($term);
             }
             $term    = $term ?: [];

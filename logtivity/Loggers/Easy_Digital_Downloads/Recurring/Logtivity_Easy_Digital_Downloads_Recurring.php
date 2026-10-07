@@ -55,6 +55,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 					$log->addMeta('Expiration Date', date('M d Y', strtotime($expiration)));
 				} catch (Throwable $e) {
                     // Ignore
+                    unset($e);
 				}
 			}
 
@@ -77,6 +78,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($args['expiration'])));
 			} catch (Throwable $e) {
                 // Ignore
+                unset($e);
 			}
 		}
 
@@ -124,6 +126,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
 			} catch (Throwable $e) {
                 // Ignore
+                unset($e);
 			}
 		}
 
@@ -152,6 +155,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
 			} catch (Throwable $e) {
                 // Ignore
+                unset($e);
 			}
 		}
 
@@ -175,6 +179,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
 			} catch (Throwable $e) {
                 // Ignore
+                unset($e);
 			}
 		}
 
@@ -211,6 +216,7 @@ class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy
 				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
 			} catch (Throwable $e) {
                 // Ignore
+                unset($e);
 			}
 		}
 

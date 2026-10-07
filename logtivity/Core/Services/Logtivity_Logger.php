@@ -67,6 +67,11 @@ class Logtivity_Logger extends Logtivity_Api
     public array $userMeta = [];
 
     /**
+     * @var bool
+     */
+    protected bool $includeInventory = false;
+
+    /**
      * @param ?int $userId
      */
     public function __construct(?int $userId = null)
@@ -256,8 +261,9 @@ class Logtivity_Logger extends Logtivity_Api
      */
     public function addTrace(): self
     {
-        $stack = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        $stack = (new Exception())->getTrace();
         array_shift($stack);
+        $stack = array_slice($stack, 0, 12);
 
         $this->addMeta('Stack Trace', '**********');
 
@@ -266,6 +272,19 @@ class Logtivity_Logger extends Logtivity_Api
             $line = $stackItem['line'] ?? 'NULL';
             $this->addMeta($index, sprintf('%s: %s', $line, $file));
         }
+
+        return $this;
+    }
+
+    /**
+     * Send the current plugin/theme inventory with this log so the API's stored
+     * copy stays in step with the change being logged. Captured at send time.
+     *
+     * @return $this
+     */
+    public function addInventory(): self
+    {
+        $this->includeInventory = true;
 
         return $this;
     }
@@ -301,7 +320,7 @@ class Logtivity_Logger extends Logtivity_Api
      */
     protected function getData(): array
     {
-        return [
+        $data = [
             'action'     => $this->action,
             'context'    => $this->context,
             'post_type'  => $this->post_type,
@@ -312,6 +331,12 @@ class Logtivity_Logger extends Logtivity_Api
             'user_meta'  => $this->getUserMeta(),
             'ip_address' => $this->maybeGetUsersIp(),
         ];
+
+        if ($this->includeInventory) {
+            $data = array_merge($data, (new Logtivity_Site_Inventory())->get());
+        }
+
+        return $data;
     }
 
     /**
@@ -342,9 +367,11 @@ class Logtivity_Logger extends Logtivity_Api
         if (
             $this->options->shouldStoreProfileLink()
             && $this->user->isLoggedIn()
-            && ($profileLink = $this->user->profileLink())
         ) {
-            $this->addUserMeta('Profile Link', $profileLink);
+            $profileLink = $this->user->profileLink();
+            if ($profileLink) {
+                $this->addUserMeta('Profile Link', $profileLink);
+            }
         }
 
         return $this;

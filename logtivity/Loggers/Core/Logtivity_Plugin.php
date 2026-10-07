@@ -71,7 +71,8 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
             $pluginData = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin, false, false);
 
         } elseif ($plugin instanceof Plugin_Upgrader) {
-            if ($slug = $plugin->plugin_info()) {
+            $slug = $plugin->plugin_info();
+            if ($slug) {
                 $pluginData = get_plugin_data($plugin->result['local_destination'] . '/' . $slug, false, false);
             }
         }
@@ -99,13 +100,15 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
      */
     public function pluginStateChanged(string $state, string $slug, bool $networkWide): void
     {
-        if ($plugin = $this->getPluginData($slug)) {
+        $plugin = $this->getPluginData($slug);
+        if ($plugin) {
             Logtivity::log()
                 ->setAction('Plugin ' . $state)
                 ->setContext($plugin['Name'])
                 ->addMeta('Version', $plugin['Version'])
                 ->addMeta('Slug', $plugin['Slug'])
                 ->addMeta('Network Wide', $networkWide ? 'Yes' : 'No')
+                ->addInventory()
                 ->send();
         }
     }
@@ -228,7 +231,8 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
             isset($this->capturedPluginData[$slug]) == false
             && $this->pluginFileExists($slug)
         ) {
-            if ($pluginData = $this->getPluginData($slug)) {
+            $pluginData = $this->getPluginData($slug);
+            if ($pluginData) {
                 $this->capturedPluginData[$slug] = $pluginData;
             }
         }
@@ -290,6 +294,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
                 ->addMeta('Slug', $plugin['Slug'])
                 ->addMeta('Version', $plugin['Version'])
                 ->addMeta('Deletion Successful', $deleted ? 'Yes' : 'No')
+                ->addInventory()
                 ->send();
         }
     }
@@ -309,7 +314,8 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
      */
     public function savePreUpdateVersion($response, array $hookExtra)
     {
-        if ($slug = $hookExtra['plugin'] ?? null) {
+        $slug = $hookExtra['plugin'] ?? null;
+        if ($slug) {
             $this->capturePluginData($slug);
         } else {
             $this->captureAllPluginData();
@@ -368,7 +374,8 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
         $plugins = $this->getPluginList($upgrader, $options);
 
         foreach ($plugins as $plugin) {
-            if ($pluginData = $this->getPluginData($plugin)) {
+            $pluginData = $this->getPluginData($plugin);
+            if ($pluginData) {
                 $log = Logtivity::log()
                     ->setAction('Plugin ' . $action)
                     ->setContext($pluginData['Name'])
@@ -381,6 +388,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
                 }
 
                 $log->addMeta('Bulk', $bulk ? 'Yes' : 'No')
+                    ->addInventory()
                     ->send();
             }
         }
@@ -393,9 +401,17 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
      */
     public function pluginFileModified(array $defaultTypes): array
     {
-        $action = sanitize_text_field($_POST['action'] ?? null);
-        $plugin = sanitize_text_field($_POST['plugin'] ?? null);
-        $file   = sanitize_text_field($_REQUEST['file'] ?? null);
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Passive logger reads core plugin-editor request after WordPress validates it.
+        $action = isset($_POST['action'])
+            ? sanitize_text_field(wp_unslash($_POST['action']))
+            : null;
+        $plugin = isset($_POST['plugin'])
+            ? sanitize_text_field(wp_unslash($_POST['plugin']))
+            : null;
+        $file   = isset($_REQUEST['file'])
+            ? sanitize_text_field(wp_unslash($_REQUEST['file']))
+            : null;
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
 
         if ($file && $plugin && $action == 'edit-theme-plugin-file') {
             $pluginData = $this->getPluginData($plugin);

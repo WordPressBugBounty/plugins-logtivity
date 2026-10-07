@@ -83,17 +83,19 @@ $isWelcome = !($options['logtivity_site_api_key'] ?? false);
                     ?>
                 </p>
                 <p>
-                    <a class="button-primary logtivity-button logtivity-button-primary"
-                       target="_blank"
-                       href="<?php echo logtivity_get_app_url() . '/register'; ?>">
+	                    <a class="button-primary logtivity-button logtivity-button-primary"
+	                       target="_blank"
+	                       rel="noopener noreferrer"
+	                       href="<?php echo esc_url(logtivity_get_app_url() . '/register'); ?>">
                         <?php esc_attr_e('Start your free 10 day trial', 'logtivity'); ?>
                     </a>
                 </p>
             <?php endif ?>
             <ul>
-                <li>
-                    <a target="_blank"
-                       href="<?php echo logtivity_get_app_url(); ?>">
+	                <li>
+	                    <a target="_blank"
+	                       rel="noopener noreferrer"
+	                       href="<?php echo esc_url(logtivity_get_app_url()); ?>">
                         <?php esc_html_e('Logtivity Dashboard', 'logtivity'); ?>
                     </a>
                 </li>

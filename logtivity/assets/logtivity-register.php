@@ -43,10 +43,10 @@ abstract class Logtivity_Register
         }
 
         if (empty($message) === false) {
-            echo sprintf(
+            printf(
                 '<div class="notice notice-%s"><p>%s</p></div>',
-                $status,
-                $message
+                esc_attr($status),
+                wp_kses_post($message)
             );
         }
     }

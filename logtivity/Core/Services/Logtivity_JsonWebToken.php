@@ -76,7 +76,10 @@ class Logtivity_JsonWebToken
             if (!$signature) {
                 throw new Exception('Invalid JWT Signature');
 
-            } elseif ($payloadJson = $this->base64Decode($payload64)) {
+            }
+
+            $payloadJson = $this->base64Decode($payload64);
+            if ($payloadJson) {
                 $hash = hash_hmac($this->algorithm, "{$header64}.{$payload64}", $secret, true);
                 if (hash_equals($hash, $signature)) {
                     $payload = $this->jsonDecode($payloadJson);
@@ -113,7 +116,11 @@ class Logtivity_JsonWebToken
     }
 
     /**
-     * Base64 encoding that is url safe
+     * Base64url encode JWT segments.
+     *
+     * JWT compact serialization requires base64url encoding for the header,
+     * payload, and binary signature. This is protocol encoding, not
+     * obfuscation.
      *
      * @param string $input
      *
@@ -125,6 +132,7 @@ class Logtivity_JsonWebToken
             '=',
             '',
             strtr(
+                // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- JWT base64url encoding requires Base64.
                 base64_encode($input),
                 '+/',
                 '-_'
@@ -133,7 +141,11 @@ class Logtivity_JsonWebToken
     }
 
     /**
-     * Restore URL safe base64 string
+     * Base64url decode JWT segments.
+     *
+     * JWT compact serialization stores header, payload, and signature as
+     * base64url. Strict Base64 decoding is required after translating the URL
+     * safe alphabet.
      *
      * @param string $input
      *
@@ -147,7 +159,7 @@ class Logtivity_JsonWebToken
             $input   .= str_repeat('=', $padding);
         }
 
-        // JWT segments use base64url encoding, so translate to standard Base64 before decoding.
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- JWT base64url decoding requires Base64 with strict mode enabled.
         $decoded = base64_decode(strtr($input, '-_', '+/'), true);
 
         return false === $decoded ? '' : $decoded;

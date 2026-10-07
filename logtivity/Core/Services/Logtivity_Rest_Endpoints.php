@@ -90,7 +90,9 @@ class Logtivity_Rest_Endpoints
      */
     protected function verifyAuthorization(?string $authHeader)
     {
-        if ($apikey = (new Logtivity_Options())->getApiKey()) {
+        $apikey = (new Logtivity_Options())->getApiKey();
+
+        if ($apikey) {
             try {
                 if ($authHeader == false) {
                     throw new Exception('No authorization provided');

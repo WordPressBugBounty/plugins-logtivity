@@ -21,6 +21,7 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
 echo logtivity_view('_admin-header', compact('options'));
 ?>
 
@@ -31,8 +32,9 @@ echo logtivity_view('_admin-header', compact('options'));
 			<h1 style="padding-top: 10px;">Logs</h1>
 		</div>
 
-		<form id="logtivity-log-index-search-form" method="GET" action="<?php echo admin_url( 'admin-ajax.php' ) ?>">
+		<form id="logtivity-log-index-search-form" method="GET" action="<?php echo esc_url(admin_url( 'admin-ajax.php' )) ?>">
 			<input type="hidden" name="action" value="logtivity_log_index_filter">
+			<?php wp_nonce_field('logtivity_log_index_filter', 'logtivity_log_index_nonce') ?>
 			<input id="logtivity_page" type="hidden" name="page">
 
 			<div class="logtivity-row">
@@ -71,4 +73,7 @@ echo logtivity_view('_admin-header', compact('options'));
 	</div>
 </div>
 
-<?php echo logtivity_view('_admin-footer', compact('options')); ?>
+	<?php
+    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
+    echo logtivity_view('_admin-footer', compact('options'));
+    ?>

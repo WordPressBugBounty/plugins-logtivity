@@ -155,7 +155,7 @@ class Logtivity_Options
      */
     public function shouldLogLatestResponse(): bool
     {
-        return $this->getOption('logtivity_enable_debug_mode') || $this->shouldCheckInWithApi();
+        return $this->shouldCheckInWithApi();
     }
 
     /**
@@ -163,13 +163,11 @@ class Logtivity_Options
      */
     public function shouldCheckInWithApi(): bool
     {
-        if ($this->getOption('logtivity_enable_debug_mode') == false) {
-            $lastCheckin = get_option('logtivity_last_settings_check_in_at');
-            $lastCheckin = $lastCheckin['date'] ?? null;
+        $lastCheckin = get_option('logtivity_last_settings_check_in_at');
+        $lastCheckin = $lastCheckin['date'] ?? null;
 
-            if ($lastCheckin) {
-                return time() - strtotime($lastCheckin) > $this->checkinDelay;
-            }
+        if ($lastCheckin) {
+            return time() - strtotime($lastCheckin) > $this->checkinDelay;
         }
 
         return true;
@@ -225,17 +223,47 @@ class Logtivity_Options
      */
     public function update(array $data = [], bool $checkApiKey = true): void
     {
-        $settings = array_intersect_key($data ?: $_POST, $this->settings);
+        if (!$data) {
+            if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
+                return;
+            }
+
+            check_ajax_referer('logtivity_update_settings', 'logtivity_update_settings');
+
+            $data = wp_unslash($_POST);
+        }
+
+        $settings = array_intersect_key($data, $this->settings);
         foreach ($settings as $key => $value) {
+            $value = $this->sanitizeSetting($key, $value);
+
             if ($this->validateSetting($key, $value)) {
                 update_option($key, $value);
             }
         }
 
         if ($checkApiKey) {
-            $this->checkApiKey($data['logtivity_site_api_key']
-                ?? sanitize_text_field($_POST['logtivity_site_api_key'] ?? null));
+            $this->checkApiKey($settings['logtivity_site_api_key'] ?? null);
         }
+    }
+
+    /**
+     * Sanitize setting values before saving.
+     *
+     * @param string $key
+     * @param mixed  $value
+     *
+     * @return mixed
+     */
+    protected function sanitizeSetting(string $key, $value)
+    {
+        $setting = $this->settings[$key] ?? null;
+
+        if (($setting['rule'] ?? null) === 'is_string' && is_scalar($value)) {
+            return sanitize_textarea_field((string)$value);
+        }
+
+        return $value;
     }
 
     /**

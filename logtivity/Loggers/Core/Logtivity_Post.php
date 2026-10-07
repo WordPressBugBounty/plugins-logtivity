@@ -418,7 +418,8 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
 
         // Convert author ID to author name
         if (empty($data['post_author'] == false)) {
-            if ($author = get_user($data['post_author'])) {
+            $author = get_user($data['post_author']);
+            if ($author) {
                 $data['post_author'] = $author->user_login;
             } else {
                 $data['post_author'] = 'ID ' . $data['post_author'];

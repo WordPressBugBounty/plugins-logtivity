@@ -56,12 +56,17 @@ class Logtivity_Dismiss_Notice_Controller
         check_ajax_referer('logtivity_dismiss_notice');
 
         if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
-            wp_die(__('You do not have sufficient permissions to access this page.'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'logtivity'));
         }
 
-        $postType = sanitize_text_field($_POST['postType'] ?? null);
-        if (in_array($postType, $this->notices)) {
-            $dismissUntil = sanitize_text_field($_POST['dismissUntil'] ?? null);
+        $postType = isset($_POST['postType'])
+            ? sanitize_text_field(wp_unslash($_POST['postType']))
+            : null;
+
+        if (in_array($postType, $this->notices, true)) {
+            $dismissUntil = isset($_POST['dismissUntil'])
+                ? sanitize_text_field(wp_unslash($_POST['dismissUntil']))
+                : null;
 
             if ($dismissUntil) {
                 set_transient(

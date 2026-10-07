@@ -115,10 +115,17 @@ class Logtivity_Memberpress extends Logtivity_Abstract_Logger
 
     public function profileUpdated()
     {
+        $processAccount = isset($_POST['mepr-process-account'])
+            ? sanitize_text_field(wp_unslash($_POST['mepr-process-account']))
+            : '';
+        $nonce = isset($_POST['mepr_account_nonce'])
+            ? sanitize_text_field(wp_unslash($_POST['mepr_account_nonce']))
+            : '';
+
         if (
             MeprUtils::is_post_request()
-            && sanitize_text_field($_POST['mepr-process-account'] ?? null) == 'Y'
-            && wp_verify_nonce(sanitize_text_field($_POST['mepr_account_nonce'] ?? null), 'update_account')
+            && $processAccount == 'Y'
+            && wp_verify_nonce($nonce, 'update_account')
         ) {
             $user = new Logtivity_Wp_User();
 

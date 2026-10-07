@@ -26,7 +26,10 @@
 			<!-- #post-body-content -->
 			</div>
 
-		<?php echo logtivity_view('_admin-sidebar', compact('options')); ?>
+			<?php
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
+            echo logtivity_view('_admin-sidebar', compact('options'));
+            ?>
 
 		</div>
 		<!-- #post-body .metabox-holder .columns-2 -->

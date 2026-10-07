@@ -66,9 +66,9 @@ trait Logtivity_User_Logger_Trait
     {
         if ($this->options->shouldStoreIp()) {
             $ipAddress = filter_var(
-                ($_SERVER['HTTP_CLIENT_IP'] ?? '')
-                    ?: ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '')
-                    ?: $_SERVER['REMOTE_ADDR'] ?? '',
+                (isset($_SERVER['HTTP_CLIENT_IP']) ? wp_unslash($_SERVER['HTTP_CLIENT_IP']) : '')
+                    ?: (isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR']) : '')
+                    ?: (isset($_SERVER['REMOTE_ADDR']) ? wp_unslash($_SERVER['REMOTE_ADDR']) : ''),
                 FILTER_VALIDATE_IP
             );
 

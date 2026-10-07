@@ -30,7 +30,6 @@ class Logtivity_Log_Index_Controller
 {
     public function __construct()
     {
-        add_action('wp_ajax_nopriv_logtivity_log_index_filter', [$this, 'search']);
         add_action('wp_ajax_logtivity_log_index_filter', [$this, 'search']);
     }
 
@@ -47,6 +46,8 @@ class Logtivity_Log_Index_Controller
      */
     public function search(): void
     {
+        check_ajax_referer('logtivity_log_index_filter', 'logtivity_log_index_nonce');
+
         if (current_user_can(Logtivity::ACCESS_LOGS)) {
             $api = Logtivity::log();
 
@@ -90,7 +91,9 @@ class Logtivity_Log_Index_Controller
      */
     protected function getInput(string $field): ?string
     {
-        return sanitize_text_field($_GET[$field] ?? null);
+        return isset($_GET[$field])
+            ? sanitize_text_field(wp_unslash($_GET[$field]))
+            : null;
     }
 
     /**

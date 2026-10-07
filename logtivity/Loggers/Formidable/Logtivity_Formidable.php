@@ -111,11 +111,13 @@ class Logtivity_Formidable
 
 				} catch (Throwable $e) {
                     // Ignore
+                    unset($e);
 			}
 
 			$log->send();
 		} catch (Throwable $e) {
-			error_log($e);
+			// Keep Formidable submissions working if optional logging metadata fails.
+			unset($e);
 		}
 	}
 
@@ -130,7 +132,8 @@ class Logtivity_Formidable
 		}
 
 		if ($this->shouldStoreField($field->type, $field->field_key, $value)) {
-			if ($value = $this->maybeLogFormValue($field->type, $value)) {
+			$value = $this->maybeLogFormValue($field->type, $value);
+			if ($value) {
 				$log->addMeta($field->name, $value);
 			}
 		}

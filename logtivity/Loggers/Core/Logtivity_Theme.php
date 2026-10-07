@@ -43,18 +43,18 @@ class Logtivity_Theme extends Logtivity_Abstract_Logger
             ->setContext((is_object($new_theme) ? $new_theme->name : $new_theme))
             ->addMeta('Version', (is_object($new_theme) ? $new_theme->version : $new_theme))
             ->addMeta('Old Theme', (is_object($old_theme) ? $old_theme->name : $old_theme))
+            ->addInventory()
             ->send();
     }
 
     public function themeMaybeDeleted()
     {
-        $delete_theme_call = $this->getDeleteThemeCall();
+        $slug = $this->getDeletedThemeSlug();
 
-        if (empty($delete_theme_call)) {
+        if (empty($slug)) {
             return;
         }
 
-        $slug  = $delete_theme_call['args'][0];
         $theme = wp_get_theme($slug);
 
         Logtivity::log()
@@ -62,6 +62,7 @@ class Logtivity_Theme extends Logtivity_Abstract_Logger
             ->setContext($theme->get('Name'))
             ->addMeta('Version', $theme->get('Version'))
             ->addMeta('URI', $theme->get('ThemeURI'))
+            ->addInventory()
             ->send();
     }
 
@@ -97,6 +98,7 @@ class Logtivity_Theme extends Logtivity_Abstract_Logger
                 ->setContext($theme->name)
                 ->addMeta('Version', $theme->version)
                 ->addMeta('Bulk Update', $bulk ? 'Yes' : 'No')
+                ->addInventory()
                 ->send();
         }
     }
@@ -117,26 +119,39 @@ class Logtivity_Theme extends Logtivity_Abstract_Logger
             ->setAction('Theme Installed')
             ->setContext($theme->name)
             ->addMeta('Version', $theme->version)
+            ->addInventory()
             ->send();
     }
 
     public function themeFileModified($default_types, $theme)
     {
-        if (!isset($_POST['action']) || $_POST['action'] != 'edit-theme-plugin-file') {
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Passive logger reads core theme-editor request after WordPress validates it.
+        $action = isset($_POST['action'])
+            ? sanitize_text_field(wp_unslash($_POST['action']))
+            : null;
+        $themeSlug = isset($_POST['theme'])
+            ? sanitize_text_field(wp_unslash($_POST['theme']))
+            : null;
+        $file = isset($_POST['file'])
+            ? sanitize_text_field(wp_unslash($_POST['file']))
+            : null;
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
+
+        if ($action != 'edit-theme-plugin-file') {
             return $default_types;
         }
 
-        if (!isset($_POST['theme'])) {
+        if (!$themeSlug) {
             return $default_types;
         }
 
         $log = Logtivity::log('Theme File Edited');
 
-        if (!empty($_POST['file']) && is_string($_POST['file'])) {
-            $log->addMeta('File', sanitize_text_field($_POST['file']));
+        if ($file) {
+            $log->addMeta('File', $file);
         }
 
-        if (!empty($_POST['theme'])) {
+        if ($themeSlug) {
             $log->setContext($theme->display('Name'));
         }
 
@@ -153,20 +168,15 @@ class Logtivity_Theme extends Logtivity_Abstract_Logger
             ->send();
     }
 
-    private function getDeleteThemeCall()
+    private function getDeletedThemeSlug(): ?string
     {
-        $backtrace = debug_backtrace();
-
-        $delete_theme_call = null;
-
-        foreach ($backtrace as $call) {
+        foreach ((new Exception())->getTrace() as $call) {
             if (isset($call['function']) && 'delete_theme' === $call['function']) {
-                $delete_theme_call = $call;
-                break;
+                return $call['args'][0] ?? null;
             }
         }
 
-        return $delete_theme_call;
+        return null;
     }
 }
 

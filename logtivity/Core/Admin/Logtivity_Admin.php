@@ -43,7 +43,6 @@ class Logtivity_Admin
         add_action('admin_menu', [$this, 'registerOptionsPage']);
 
         add_action('wp_ajax_logtivity_update_settings', [$this, 'update']);
-        add_action('wp_ajax_nopriv_logtivity_update_settings', [$this, 'update']);
 
         add_action('wp_ajax_logtivity_register_site', [$this, 'registerSite']);
 
@@ -68,7 +67,8 @@ class Logtivity_Admin
      */
     public function maybeHideFromMenu(array $plugins): array
     {
-        if ($name = (new Logtivity_Options())->customPluginName()) {
+        $name = (new Logtivity_Options())->customPluginName();
+        if ($name) {
             if (isset($plugins['logtivity/logtivity.php'])) {
                 $plugins['logtivity/logtivity.php']['Name'] = $name;
             }
@@ -78,6 +78,7 @@ class Logtivity_Admin
             return $plugins;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- show_all only controls local admin list display.
         $shouldHide = !array_key_exists('show_all', $_GET);
 
         if ($shouldHide) {
@@ -99,7 +100,9 @@ class Logtivity_Admin
      */
     public function shouldHidePluginFromUI(bool $value = false): bool
     {
-        if (static::$shouldHidePluginFromUI = (new Logtivity_Options())->isPluginHiddenFromUI()) {
+        static::$shouldHidePluginFromUI = (new Logtivity_Options())->isPluginHiddenFromUI();
+
+        if (static::$shouldHidePluginFromUI) {
             return static::$shouldHidePluginFromUI;
         }
 
@@ -156,11 +159,12 @@ class Logtivity_Admin
     public function showLogIndexPage(): void
     {
         if (!current_user_can(Logtivity::ACCESS_LOGS)) {
-            wp_die(__('You do not have sufficient permissions to access this page.'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'logtivity'));
         }
 
         $options = $this->options->getOptions();
 
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
         echo logtivity_view('log-index', compact('options'));
     }
 
@@ -172,11 +176,12 @@ class Logtivity_Admin
     public function showSettingsPage(): void
     {
         if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
-            wp_die(__('You do not have sufficient permissions to access this page.'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'logtivity'));
         }
 
         $options = $this->options->getOptions();
 
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
         echo logtivity_view('settings', compact('options'));
     }
 
@@ -188,11 +193,12 @@ class Logtivity_Admin
     public function showRegisterSitePage(): void
     {
         if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
-            wp_die(__('You do not have sufficient permissions to access this page.'));
+            wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'logtivity'));
         }
 
         $options = $this->options->getOptions();
 
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
         echo logtivity_view('register', compact('options'));
     }
 
@@ -201,9 +207,13 @@ class Logtivity_Admin
      */
     public function update(): void
     {
+        $nonce = isset($_POST['logtivity_update_settings'])
+            ? sanitize_text_field(wp_unslash($_POST['logtivity_update_settings']))
+            : '';
+
         if (
             !wp_verify_nonce(
-                sanitize_text_field($_POST['logtivity_update_settings'] ?? null),
+                $nonce,
                 'logtivity_update_settings'
             )
         ) {
@@ -211,9 +221,7 @@ class Logtivity_Admin
             exit();
         }
 
-        $user = new Logtivity_Wp_User();
-
-        if (!$user->hasRole('administrator')) {
+        if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
             wp_safe_redirect($this->settingsPageUrl());
             exit();
         }
@@ -229,6 +237,10 @@ class Logtivity_Admin
 
         $this->options->update();
 
+        if (!$this->options->getOption('logtivity_enable_debug_mode')) {
+            (new Logtivity_Debug_Log())->delete();
+        }
+
         (new Logtivity_Check_For_New_Settings())->checkForNewSettings();
 
         wp_safe_redirect($this->settingsPageUrl());
@@ -243,13 +255,23 @@ class Logtivity_Admin
     public function registerSite(): void
     {
         try {
+            if (!current_user_can(Logtivity::ACCESS_SETTINGS)) {
+                wp_send_json_error('Unauthorized');
+            }
+
+            $nonce = isset($_POST['logtivity_register_site'])
+                ? sanitize_text_field(wp_unslash($_POST['logtivity_register_site']))
+                : '';
+
             if (
                 wp_verify_nonce(
-                    sanitize_text_field($_POST['logtivity_register_site'] ?? null),
+                    $nonce,
                     'logtivity_register_site'
                 )
             ) {
-                $teamApi = sanitize_text_field($_POST['logtivity_team_api_key'] ?? null);
+                $teamApi = isset($_POST['logtivity_team_api_key'])
+                    ? sanitize_text_field(wp_unslash($_POST['logtivity_team_api_key']))
+                    : '';
 
                 $response = Logtivity::registerSite($teamApi);
 

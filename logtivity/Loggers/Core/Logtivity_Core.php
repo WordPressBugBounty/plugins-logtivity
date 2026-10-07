@@ -192,8 +192,14 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
      */
     public function maybeSettingsUpdated(): void
     {
-        $optionPage = sanitize_text_field($_POST['option_page'] ?? '');
-        $action     = sanitize_text_field($_POST['action'] ?? '');
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Passive logger reads core settings request after WordPress validates it.
+        $optionPage = isset($_POST['option_page'])
+            ? sanitize_text_field(wp_unslash($_POST['option_page']))
+            : '';
+        $action     = isset($_POST['action'])
+            ? sanitize_text_field(wp_unslash($_POST['action']))
+            : '';
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
 
         if ($optionPage && $action == 'update') {
             Logtivity::log()
@@ -252,7 +258,9 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
      */
     private function getRequestMethod(): string
     {
-        return sanitize_text_field($_SERVER['REQUEST_METHOD'] ?? '');
+        return isset($_SERVER['REQUEST_METHOD'])
+            ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD']))
+            : '';
     }
 
     /**

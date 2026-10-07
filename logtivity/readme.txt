@@ -4,7 +4,7 @@ Contributors: logtivity, stevejburge
 Tags: activity log, user activity, audit log, event monitoring, logs
 Requires at least: 6.6
 Tested up to: 7.1
-Stable tag: 3.3.9
+Stable tag: 3.3.10
 Requires PHP: 7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -251,6 +251,10 @@ Logtivity is the official brandname. When writing about this activity plugin, pl
 * Log tivity, loggtivity, logg tivity (all incorrect)
 
 == Changelog ==
+
+= 3.3.10 07 Oct 2026 ==
+  * Improved debugging option
+  * Send inventory on all plugin/theme changes
 
 = 3.3.9 22 Sep 2026 =
   * Update Code Snippet Logger for newest version

@@ -59,17 +59,24 @@ class Logtivity_WP_All_Import
 
 	public function isImporting()
 	{
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Passive import-state detection for WP All Import requests.
+		$page      = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		$action    = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
+		$q         = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'] ) ) : '';
+		$import_id = isset( $_GET['import_id'] ) ? absint( wp_unslash( $_GET['import_id'] ) ) : 0;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
 		// Manually running an import
-		$manual_run = isset( $_GET['page'] ) && ( $_GET['page'] == 'pmxi-admin-import' || $_GET['page'] == 'pmxi-admin-manage' );
+		$manual_run = $page == 'pmxi-admin-import' || $page == 'pmxi-admin-manage';
 
 		// Cron jobs running an import
-		$cron_run = isset( $_GET['import_id'] ) && isset( $_GET['action'] ) && $_GET['action'] == 'processing';
+		$cron_run = $import_id && $action == 'processing';
 
 		// Automatic Scheduling service running an import
-		$automatic_scheduling_run = ( isset( $_GET['action'] ) && $_GET['action'] == 'wpai_public_api' ) && ( isset( $_GET['q'] ) && $_GET['q'] == 'scheduling/process' );
+		$automatic_scheduling_run = $action == 'wpai_public_api' && $q == 'scheduling/process';
 
 		// Manually uploading an import file
-		$manual_upload = ( isset($_GET['page']) && $_GET['page'] == 'pmxi-admin-settings' ) && ( isset( $_GET['action'] ) && $_GET['action'] == 'upload' );
+		$manual_upload = $page == 'pmxi-admin-settings' && $action == 'upload';
 
 		// Extra check: see if import ID is numeric
 		$import_id = is_numeric( $this->wp_all_import_get_import_id() );
@@ -103,9 +110,10 @@ class Logtivity_WP_All_Import
             }
         }
 
-        if ( $import_id == 'new' ) {
-            if ( isset( $_GET['import_id'] ) ) {
-                $import_id = intval($_GET['import_id']);
+	        if ( $import_id == 'new' ) {
+	            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Passive import-state detection for WP All Import requests.
+	            if ( isset( $_GET['import_id'] ) ) {
+	                $import_id = absint( wp_unslash( $_GET['import_id'] ) );
             // } elseif ( isset( $_GET['id'] ) ) {
             //     $import_id = intval($_GET['id']);
             }

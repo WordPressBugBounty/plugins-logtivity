@@ -30,11 +30,11 @@
  * @var array  $options
  */
 
-$api            = new Logtivity_Api();
-$apiKey         = $api->getApiKey();
-$latestResponse = $api->getLatestResponse();
-$status         = $api->getConnectionStatus();
+$api              = new Logtivity_Api();
+$apiKey           = $api->getApiKey();
+$latestResponse   = $api->getLatestResponse();
 
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
 echo logtivity_view('_admin-header', compact('options'));
 ?>
 
@@ -55,16 +55,16 @@ echo logtivity_view('_admin-header', compact('options'));
                     key.
                     <br>
                     You can find this value by logging into your account and navigating to the
-                    <?php echo sprintf(
+                    <?php printf(
                         '<a href="%s" target="_blank">%s</a>.',
-                        logtivity_get_app_url() . '/team-settings',
-                        'Team Settings page'
+                        esc_url(logtivity_get_app_url() . '/team-settings'),
+                        esc_html__('Team Settings page', 'logtivity')
                     );
                     ?>
                 </div>
             </div>
 
-            <form action="<?php echo admin_url('admin-ajax.php'); ?>"
+            <form action="<?php echo esc_url(admin_url('admin-ajax.php')); ?>"
                   id="logtivity-register-site"
                   method="post">
                 <?php wp_nonce_field('logtivity_register_site', 'logtivity_register_site') ?>
@@ -101,4 +101,7 @@ echo logtivity_view('_admin-header', compact('options'));
     </div>
 </div>
 
-<?php echo logtivity_view('_admin-footer', compact('options')); ?>
+<?php
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
+echo logtivity_view('_admin-footer', compact('options'));
+?>

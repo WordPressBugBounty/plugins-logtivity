@@ -32,10 +32,14 @@ if (function_exists('logtivity_dd') == false) {
      */
     function logtivity_dd($dump)
     {
+        if (!defined('WP_DEBUG') || !WP_DEBUG) {
+            return;
+        }
+
         echo '<pre>';
-        var_export($dump);
+        echo esc_html(wp_json_encode($dump, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
         echo '</pre>';
-        die();
+        wp_die();
     }
 
     /**
@@ -65,7 +69,14 @@ if (function_exists('logtivity_dd') == false) {
      */
     function logtivity_view(string $fileName, array $vars = []): string
     {
-        extract($vars);
+        $options     = $vars['options'] ?? [];
+        $log         = $vars['log'] ?? null;
+        $logs        = $vars['logs'] ?? [];
+        $message     = $vars['message'] ?? null;
+        $meta        = $vars['meta'] ?? null;
+        $hasNextPage = $vars['hasNextPage'] ?? null;
+        $display     = $vars['display'] ?? false;
+        $logo        = $vars['logo'] ?? true;
         unset($vars);
 
         ob_start();
@@ -192,7 +203,8 @@ if (function_exists('logtivity_dd') == false) {
     function logtivity_get_capabilities(): array
     {
         $capabilities = [];
-        if ($roles = wp_roles()) {
+        $roles        = wp_roles();
+        if ($roles) {
             foreach ($roles->roles as $role) {
                 $capabilities = array_merge($capabilities, $role['capabilities']);
             }
@@ -235,7 +247,7 @@ if (function_exists('logtivity_dd') == false) {
                 $value = get_object_vars($value);
             // fall through to array type
             case 'array':
-                return print_r($value, true);
+                return wp_json_encode($value, JSON_UNESCAPED_SLASHES) ?: '';
 
             case 'boolean':
                 return $value ? 'True' : 'False';

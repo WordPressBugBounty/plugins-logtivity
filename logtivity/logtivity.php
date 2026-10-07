@@ -5,7 +5,9 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.3.9
+ * Version:           3.3.10
+ * License:           GPL-2.0-or-later
+ * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       logtivity
  * Requires at least: 6.6
  * Requires PHP:      7.4
@@ -37,7 +39,7 @@
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 
 if (!defined('LOGTIVITY_VERSION')) {
-    define('LOGTIVITY_VERSION', '3.3.9');
+    define('LOGTIVITY_VERSION', '3.3.10');
 }
 
 class Logtivity
@@ -211,7 +213,8 @@ class Logtivity
             }
         );
 
-        if ($administrator = get_role('administrator')) {
+        $administrator = get_role('administrator');
+        if ($administrator) {
             if (array_search(Logtivity::ACCESS_LOGS, $capabilities) === false) {
                 $administrator->add_cap(Logtivity::ACCESS_LOGS);
             }
@@ -385,8 +388,10 @@ class Logtivity
     {
         $path = str_replace(WP_PLUGIN_DIR . '/', '', __FILE__);
 
-        if ($plugins = get_option('active_plugins')) {
-            if ($key = array_search($path, $plugins)) {
+        $plugins = get_option('active_plugins');
+        if ($plugins) {
+            $key = array_search($path, $plugins);
+            if ($key !== false) {
                 array_splice($plugins, $key, 1);
                 array_unshift($plugins, $path);
                 update_option('active_plugins', $plugins);
@@ -418,7 +423,7 @@ class Logtivity
      */
     public function activated(): void
     {
-        add_option('logtivity_activate', true);
+        add_option('logtivity_activate', true, '', 'no');
 
         $this->checkCapabilities();
 
@@ -441,9 +446,10 @@ class Logtivity
         if (get_option('logtivity_activate')) {
             delete_option('logtivity_activate');
 
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- activate-multi is a core activation redirect flag.
             if (!isset($_GET['activate-multi'])) {
                 $page = (new Logtivity_Options())->isWhiteLabelMode() ? 'lgtvy-logs' : 'logtivity';
-                wp_redirect(admin_url('admin.php?page=' . $page));
+                wp_safe_redirect(admin_url('admin.php?page=' . $page));
                 exit;
             }
         }
@@ -455,6 +461,7 @@ class Logtivity
     public function welcomeMessage(): void
     {
         if (get_transient('logtivity-welcome-notice')) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
             echo logtivity_view('activation');
 
             delete_transient('logtivity-welcome-notice');
@@ -472,6 +479,7 @@ class Logtivity
             && (new Logtivity_Options())->isWhiteLabelMode() == false
             && !get_transient('dismissed-logtivity-site-url-has-changed-notice')
         ) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
             echo logtivity_view('site-url-changed-notice');
         }
     }

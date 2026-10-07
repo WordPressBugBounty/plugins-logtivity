@@ -30,11 +30,12 @@
  * @var array  $options
  */
 
-$api            = new Logtivity_Api();
-$apiKey         = $api->getApiKey();
-$latestResponse = $api->getLatestResponse();
-$status         = $api->getConnectionStatus();
+$api              = new Logtivity_Api();
+$apiKey           = $api->getApiKey();
+$connectionStatus = $api->getConnectionStatus();
+$debugLogEntries  = (new Logtivity_Debug_Log())->recent();
 
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
 echo logtivity_view('_admin-header', compact('options'));
 ?>
 
@@ -69,16 +70,17 @@ echo logtivity_view('_admin-header', compact('options'));
             <div class="logtivity-notice logtivity-notice-warning">
                 <h2>This site is not sending logs to the production application.</h2>
                 <div>
-                    See your dashboard at
-                    <a target="_blank"
-                       href="<?php echo logtivity_get_app_url(); ?>">
-                        <?php esc_html_e('Logtivity dashboard', 'logtivity'); ?>
-                    </a>
+	                    See your dashboard at
+	                    <a target="_blank"
+	                       rel="noopener noreferrer"
+	                       href="<?php echo esc_url(logtivity_get_app_url()); ?>">
+	                        <?php esc_html_e('Logtivity dashboard', 'logtivity'); ?>
+	                    </a>
                 </div>
             </div>
         <?php endif; ?>
 
-        <form action="<?php echo admin_url('admin-ajax.php'); ?>?action=logtivity_update_settings" method="post">
+        <form action="<?php echo esc_url(admin_url('admin-ajax.php?action=logtivity_update_settings')); ?>" method="post">
 
             <?php wp_nonce_field('logtivity_update_settings', 'logtivity_update_settings') ?>
 
@@ -97,27 +99,27 @@ echo logtivity_view('_admin-header', compact('options'));
                                name="logtivity_site_api_key"
                                type="text"
                                 <?php echo has_filter('logtivity_site_api_key') ? 'readonly' : ''; ?>
-                               value="<?php echo sanitize_text_field($apiKey); ?>"
+	                               value="<?php echo esc_attr($apiKey); ?>"
                                class="regular-text">
                         <p>
                             Status:
                             <?php
-                            switch ($status) {
+                            switch ($connectionStatus) {
                                 case 'success':
                                     echo '<span style="color: #4caf50; font-weight: bold;">Connected</span>';
                                     break;
 
                                 case 'paused':
                                     echo '<span style="color: #dbbf24; font-weight: bold;">Logging is paused</span>';
-                                    echo '<br>' . $api->getConnectionMessage();
+	                                    echo '<br>' . esc_html($api->getConnectionMessage());
                                     break;
 
                                 case 'staging':
-                                    echo '<span style="color: #dbbf24; font-weight: bold;">' . $api->getConnectionMessage() . '</span>';
+	                                    echo '<span style="color: #dbbf24; font-weight: bold;">' . esc_html($api->getConnectionMessage()) . '</span>';
                                     break;
 
                                 case 'fail':
-                                    echo '<span style="color: #ff3232; font-weight: bold;">' . $api->getConnectionMessage() . '</span>';
+	                                    echo '<span style="color: #ff3232; font-weight: bold;">' . esc_html($api->getConnectionMessage()) . '</span>';
                                     break;
 
                                 default:
@@ -319,11 +321,12 @@ echo logtivity_view('_admin-header', compact('options'));
 
                     <td>
                         <span class="description">
-                            This will log the latest response from the API.
-                            This can be useful for debugging the result from an API call when storing a log.
-                            We <strong>recommend setting this to off by default</strong> as this will allow
-                            us to send logs asynchronously and not wait for a response from the API.
-                            This will be more performant.
+                            This will record a history of request and response data for API calls
+                            to a debug log file (<code>wp-content/uploads/logtivity-logs/debug.log</code>),
+                            viewable below. Response details are only captured for calls that already
+                            wait for a response (periodic settings check-ins, roughly every 10 minutes);
+                            other calls are still sent without waiting and only the outgoing request is
+                            logged. Enabling this does not affect performance.
                         </span>
                     </td>
                 </tr>
@@ -364,10 +367,10 @@ echo logtivity_view('_admin-header', compact('options'));
                                     If you have multiple sites on Logtivity and would rather control disabled
                                     logs globally you can go to the
                                     <?php
-                                    echo sprintf(
+                                    printf(
                                             '<a href="%s" target="_blank" rel="nofollow">%s</a>',
-                                            logtivity_get_app_url() . '/team-settings/activity-log-settings',
-                                            'Activity Log Settings page'
+                                            esc_url(logtivity_get_app_url() . '/team-settings/activity-log-settings'),
+                                            esc_html__('Activity Log Settings page', 'logtivity')
                                     );
                                     ?>
                                     in your Logtivity dashboard.
@@ -395,41 +398,75 @@ echo logtivity_view('_admin-header', compact('options'));
     <div class="postbox">
         <div class="inside">
 
-            <h3>Latest Response</h3>
+            <h3>Debug Log</h3>
 
-            <?php
-            if ($latestResponse) :
-                $date = $latestResponse['date'] ?? null;
-                $code = $latestResponse['code'] ?? null;
-                $message = $latestResponse['message'] ?? null;
-                $body = $latestResponse['body'] ?? null;
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display: inline-block; margin-bottom: 15px;">
+                <input type="hidden" name="action" value="logtivity_clear_debug_log">
+                <?php wp_nonce_field('logtivity_clear_debug_log', 'logtivity_clear_debug_log'); ?>
+                <input id="logtivity-clear-debug-log"
+                       type="submit"
+                       class="button"
+                       value="Clear Debug Log"
+                       onclick="return confirm('Are you sure you want to clear the debug log?');">
+            </form>
 
-                if ($date) : ?>
-                    <h4>Date: <?php echo $date; ?></h4>
-                <?php
-                endif;
+            <?php if ($debugLogEntries) : ?>
+                <a id="logtivity-download-debug-log"
+                   class="button"
+                   style="margin-bottom: 15px;"
+                   href="<?php
+                   echo esc_url(wp_nonce_url(
+                       admin_url('admin-post.php?action=logtivity_download_debug_log'),
+                       'logtivity_download_debug_log',
+                       'logtivity_download_debug_log'
+                   ));
+                   ?>">
+                    Download Debug Log
+                </a>
+            <?php endif; ?>
 
-                if ($code || $message) : ?>
-                    <h4>
-                        Response: <?php echo sprintf('%s - %s', $code ?: 'NA', $message ?: 'No Message'); ?>
-                    </h4>
-                <?php
-                endif;
-
-                if ($body) : ?>
-                    <code style="display: block; padding: 20px; overflow-x: auto;">
-                        <?php echo json_encode($body); ?>
-                    </code>
-                <?php
-                endif;
-
-            else : ?>
-                <p>The latest logging response will appear here after an event has been logged.</p>
-
-            <?php endif ?>
+            <?php if ($debugLogEntries) : ?>
+                <?php foreach ($debugLogEntries as $entry) : ?>
+                    <div style="border-bottom: 1px solid #ddd; padding: 10px 0;">
+                        <h4>
+                            <?php echo esc_html($entry['timestamp'] ?? ''); ?>
+                            &mdash;
+                            <?php echo esc_html($entry['method'] ?? ''); ?>
+                            <?php echo esc_html($entry['endpoint'] ?? ''); ?>
+                        </h4>
+                        <?php $responseCode = $entry['response_code'] ?? null; ?>
+                        <h4>
+                            Response:
+                            <?php
+                            echo $responseCode === null
+                                ? 'not captured (sent without waiting for a response)'
+                                : esc_html(sprintf(
+                                    '%s - %s (%sms)',
+                                    $responseCode,
+                                    $entry['response_message'] ?? 'No Message',
+                                    $entry['response_time_ms'] ?? 'NA'
+                                ));
+                            ?>
+                        </h4>
+                        <code style="display: block; padding: 20px; overflow-x: auto;">
+                            Request: <?php echo esc_html(wp_json_encode($entry['request_body'] ?? null)); ?>
+                        </code>
+                        <?php if ($responseCode !== null) : ?>
+                            <code style="display: block; padding: 20px; overflow-x: auto;">
+                                Response: <?php echo esc_html(wp_json_encode($entry['response_body'] ?? null)); ?>
+                            </code>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php else : ?>
+                <p>The debug log will appear here after an API call has been made.</p>
+            <?php endif; ?>
         </div>
     </div>
 
 <?php endif ?>
 
-<?php echo logtivity_view('_admin-footer', compact('options')); ?>
+<?php
+// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
+echo logtivity_view('_admin-footer', compact('options'));
+?>

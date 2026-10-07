@@ -44,6 +44,13 @@ class Logtivity_Api
     protected Logtivity_Options $options;
 
     /**
+     * Writes API call data to a file when debug mode is enabled.
+     *
+     * @var Logtivity_Debug_Log
+     */
+    protected Logtivity_Debug_Log $debugLog;
+
+    /**
      * We generally don't want to wait for a response from the API.
      *
      * @var bool
@@ -67,7 +74,8 @@ class Logtivity_Api
 
     public function __construct()
     {
-        $this->options = new Logtivity_Options();
+        $this->options  = new Logtivity_Options();
+        $this->debugLog = new Logtivity_Debug_Log();
     }
 
     /**
@@ -116,6 +124,7 @@ class Logtivity_Api
             }
 
             $waitForResponse = $this->waitForResponse || $this->options->shouldLogLatestResponse();
+            $requestBody     = $body;
 
             $request = [
                 'method'      => $method,
@@ -142,11 +151,16 @@ class Logtivity_Api
              *
              * @TODO: Switch to Logtivity_Response class to get standardized responses
              */
-            $response = wp_remote_request($this->getEndpoint($url), $request);
+            $requestStartedAt = microtime(true);
+            $response         = wp_remote_request($this->getEndpoint($url), $request);
+            $responseTimeMs   = (int)round((microtime(true) - $requestStartedAt) * 1000);
+
+            $responseData = null;
+
             if ($waitForResponse && $this->notUpdatingWidgetInCustomizer()) {
                 // We waited and received a response
                 if ($response instanceof WP_Error) {
-                    $responseData = array_merge(static::$responseData, [
+                    $parsedResponse = array_merge(static::$responseData, [
                         'code'    => 500,
                         'message' => $response->get_error_code(),
                         'error'   => $response->get_error_message() ?: $response->get_error_code(),
@@ -164,7 +178,7 @@ class Logtivity_Api
                         $responseError   = $responseMessage;
                         $responseMessage = (($responseBody['message'] ?? $responseMessage) ?: 'Unknown error');
                     }
-                    $responseData = [
+                    $parsedResponse = [
                         'code'    => $responseCode,
                         'message' => $responseMessage,
                         'error'   => $responseError,
@@ -173,10 +187,10 @@ class Logtivity_Api
                 }
 
                 $newStatus = 'success';
-                if ($responseData['code']) {
-                    if ($responseData['code'] < 400) {
+                if ($parsedResponse['code']) {
+                    if ($parsedResponse['code'] < 400) {
                         // Successful request, check if api is telling us to pause
-                        if ($responseData['error']) {
+                        if ($parsedResponse['error']) {
                             $newStatus = 'paused';
                         }
 
@@ -184,7 +198,7 @@ class Logtivity_Api
                         $this->updateSettings($body['settings'] ?? []);
 
                     } else {
-                        if ($this->getCurlError($responseData['error']) != static::CURL_TIMEOUT) {
+                        if ($this->getCurlError($parsedResponse['error']) != static::CURL_TIMEOUT) {
                             // Something other than a timeout went wrong with the request
                             $newStatus = 'fail';
                         }
@@ -196,15 +210,37 @@ class Logtivity_Api
                         'logtivity_api_key_check'   => $newStatus,
                         'logtivity_latest_response' => array_merge(
                             ['date' => date('Y-m-d H:i:s')],
-                            $responseData
+                            $parsedResponse
                         ),
                     ],
                         false
                     );
 
-                    return $responseData;
+                    $responseData = $parsedResponse;
                 }
             }
+
+            if ($this->getOption('logtivity_enable_debug_mode')) {
+                // GET responses (e.g. the paginated /logs listing) can be large
+                // and aren't useful to store in full; only capture the body for
+                // the more common POST calls (log/settings sends).
+                $responseBody = $method === 'GET' ? '(omitted for GET requests)' : ($responseData['body'] ?? null);
+
+                $this->debugLog->write([
+                    'timestamp'        => current_time('mysql'),
+                    'endpoint'         => $url,
+                    'url'              => $this->getEndpoint($url),
+                    'method'           => $method,
+                    'request_body'     => $requestBody,
+                    'response_code'    => $responseData['code'] ?? null,
+                    'response_message' => $responseData['message'] ?? null,
+                    'response_error'   => $responseData['error'] ?? null,
+                    'response_body'    => $responseData ? $responseBody : null,
+                    'response_time_ms' => $responseData ? $responseTimeMs : null,
+                ]);
+            }
+
+            return $responseData;
         }
 
         return null;
@@ -281,8 +317,14 @@ class Logtivity_Api
      */
     protected function notUpdatingWidgetInCustomizer(): bool
     {
-        $customize = sanitize_text_field($_POST['wp_customize'] ?? null);
-        $action    = sanitize_text_field($_POST['action'] ?? null);
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Passive check avoids option writes during core Customizer widget updates.
+        $customize = isset($_POST['wp_customize'])
+            ? sanitize_text_field(wp_unslash($_POST['wp_customize']))
+            : null;
+        $action    = isset($_POST['action'])
+            ? sanitize_text_field(wp_unslash($_POST['action']))
+            : null;
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
 
         return ($action == 'update-widget' && $customize == 'on') == false;
     }
