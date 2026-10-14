@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @package   Logtivity
  * @contact   logtivity.io, hello@logtivity.io
@@ -26,54 +27,67 @@ echo logtivity_view('_admin-header', compact('options'));
 ?>
 
 <div class="postbox">
-	<div class="logtivity-settings">
+    <div class="logtivity-settings">
 
-		<div class="inside">
-			<h1 style="padding-top: 10px;">Logs</h1>
-		</div>
+        <div class="inside">
+            <h1 style="padding-top: 10px;">Logs</h1>
+        </div>
 
-		<form id="logtivity-log-index-search-form" method="GET" action="<?php echo esc_url(admin_url( 'admin-ajax.php' )) ?>">
-			<input type="hidden" name="action" value="logtivity_log_index_filter">
-			<?php wp_nonce_field('logtivity_log_index_filter', 'logtivity_log_index_nonce') ?>
-			<input id="logtivity_page" type="hidden" name="page">
+        <form id="logtivity-log-index-search-form"
+              method="GET"
+              action="<?php echo esc_url(admin_url('admin-ajax.php')) ?>">
+            <input type="hidden" name="action" value="logtivity_log_index_filter">
+            <?php wp_nonce_field('logtivity_log_index_filter', 'logtivity_log_index_nonce') ?>
+            <input id="logtivity_page" type="hidden" name="page">
 
-			<div class="logtivity-row">
-				<div class="logtivity-col-md-4">
-					<label for="logtivity-search-action">
-						<?php esc_html_e( 'Search', 'logtivity' ) ?>
-					</label>
-					<input id="logtivity-search-action" type="search" name="search_action" class="large-text" placeholder="<?php esc_attr_e( 'User Created or %keyword%', 'logtivity' ) ?>">
-				</div>
-				<div class="logtivity-col-md-4">
-					<label for="logtivity-search-context">
-						<?php esc_html_e( 'Context', 'logtivity' ) ?>
-					</label>
-					<input id="logtivity-search-context" type="search" name="search_context" class="large-text" placeholder="<?php esc_attr_e( 'admin or %keyword%', 'logtivity' ) ?>">
-				</div>
-				<div class="logtivity-col-md-4">
-					<label for="logtivity-search-user">
-						<?php esc_html_e( 'User', 'logtivity' ) ?>
-					</label>
-					<input id="logtivity-search-user" type="search" name="action_user" class="large-text" placeholder="<?php esc_attr_e( 'User ID / Username / IP Address', 'logtivity' ) ?>">
-				</div>
-			</div>
-		</form>
+            <div class="logtivity-row">
+                <div class="logtivity-col-md-4">
+                    <label for="logtivity-search-action">
+                        <?php esc_html_e('Search', 'logtivity') ?>
+                    </label>
+                    <input id="logtivity-search-action"
+                           type="search"
+                           name="search_action"
+                           class="large-text"
+                           placeholder="<?php esc_attr_e('User Created or %keyword%', 'logtivity') ?>">
+                </div>
+                <div class="logtivity-col-md-4">
+                    <label for="logtivity-search-context">
+                        <?php esc_html_e('Context', 'logtivity') ?>
+                    </label>
+                    <input id="logtivity-search-context"
+                           type="search"
+                           name="search_context" class="large-text"
+                           placeholder="<?php esc_attr_e('admin or %keyword%', 'logtivity') ?>">
+                </div>
+                <div class="logtivity-col-md-4">
+                    <label for="logtivity-search-user">
+                        <?php esc_html_e('User', 'logtivity') ?>
+                    </label>
+                    <input id="logtivity-search-user"
+                           type="search"
+                           name="action_user"
+                           class="large-text"
+                           placeholder="<?php esc_attr_e('User ID / Username / IP Address', 'logtivity') ?>">
+                </div>
+            </div>
+        </form>
 
-		<div
-			style="padding-top: 15px"
-			id="logtivity-log-index"
-			role="region"
-			aria-live="polite"
-			aria-busy="true"
-			aria-label="<?php esc_attr_e( 'Log results', 'logtivity' ) ?>"
-		>
-			<!-- Populated with AJAX -->
-		</div>
+        <div
+            style="padding-top: 15px"
+            id="logtivity-log-index"
+            role="region"
+            aria-live="polite"
+            aria-busy="true"
+            aria-label="<?php esc_attr_e('Log results', 'logtivity') ?>"
+        >
+            <!-- Populated with AJAX -->
+        </div>
 
-	</div>
+    </div>
 </div>
 
-	<?php
+    <?php
     // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
     echo logtivity_view('_admin-footer', compact('options'));
     ?>

@@ -97,7 +97,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
 
             if (isset($result['expires']) && $result['expires']) {
                 try {
-                    $log->addMeta('Expiration Date', date('M d Y', $result['expires']));
+                    $log->addMeta('Expiration Date', gmdate('M d Y', $result['expires']));
                 } catch (Throwable $e) {
                     // Ignore
                     unset($e);
@@ -129,10 +129,10 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
         $license = edd_software_licensing()->get_license($this->deactivatingLicenseArgs['key'], true);
 
         if (empty($this->deactivatingLicenseArgs['url']) && !edd_software_licensing()->force_increase()) {
-
             // Attempt to grab the URL from the user agent if no URL is specified
             $domain = array_map(
                 'trim',
+                // phpcs:ignore WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__HTTP_USER_AGENT__ -- runs during a license-deactivation API call, not a cached page render.
                 explode(';', sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'] ?? '')))
             );
 
@@ -240,7 +240,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
         }
 
         try {
-            $log->addMeta('New Expiration Date', date('M d Y', $new_expiration));
+            $log->addMeta('New Expiration Date', gmdate('M d Y', $new_expiration));
         } catch (Throwable $e) {
             // Ignore
             unset($e);
@@ -276,7 +276,10 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             return;
         }
 
-        if ((is_admin() && !current_user_can('manage_licenses')) || (!is_admin() && $license->user_id != get_current_user_id())) {
+        if (
+            (is_admin() && !current_user_can('manage_licenses'))
+            || (!is_admin() && $license->user_id != get_current_user_id())
+        ) {
             return;
         }
 
@@ -285,7 +288,6 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
         $site     = $site_id ?: urldecode($site_url);
 
         if ($site) {
-
             $log = Logtivity::log()
                 ->setAction('Site Deactivated')
                 ->setContext($this->getDownloadTitle($license))
@@ -327,7 +329,7 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             return;
         }
 
-        $license = isset($_POST['license'])
+        $license        = isset($_POST['license'])
             ? sanitize_text_field(wp_unslash($_POST['license']))
             : '';
         $legacy_license = isset($_POST['license_id'])
@@ -335,7 +337,10 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             : '';
 
         if ($legacy_license && empty($license)) {
-            // In 3.5, we switched from checking for license_id to just license. Fallback check for backwards compatibility
+            /*
+             * In 3.5, we switched from checking for license_id to just license.
+             * Fallback check for backwards compatibility
+             */
             $license = $legacy_license;
         }
 
@@ -346,7 +351,10 @@ class Logtivity_Easy_Digital_Downloads_Software_Licensing extends Logtivity_Abst
             return;
         }
 
-        if ((is_admin() && !current_user_can('manage_licenses')) || (!is_admin() && $license->user_id != get_current_user_id())) {
+        if (
+            (is_admin() && !current_user_can('manage_licenses'))
+            || (!is_admin() && $license->user_id != get_current_user_id())
+        ) {
             return;
         }
 

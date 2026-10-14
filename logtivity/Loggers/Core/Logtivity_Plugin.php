@@ -69,7 +69,6 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
         if (is_string($plugin)) {
             $slug       = $plugin;
             $pluginData = get_plugin_data(WP_PLUGIN_DIR . '/' . $plugin, false, false);
-
         } elseif ($plugin instanceof Plugin_Upgrader) {
             $slug = $plugin->plugin_info();
             if ($slug) {
@@ -401,7 +400,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
      */
     public function pluginFileModified(array $defaultTypes): array
     {
-        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Passive logger reads core plugin-editor request after WordPress validates it.
+        // phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- Passive logger reads core plugin-editor request after WordPress validates it.
         $action = isset($_POST['action'])
             ? sanitize_text_field(wp_unslash($_POST['action']))
             : null;
@@ -411,7 +410,7 @@ class Logtivity_Plugin extends Logtivity_Abstract_Logger
         $file   = isset($_REQUEST['file'])
             ? sanitize_text_field(wp_unslash($_REQUEST['file']))
             : null;
-        // phpcs:enable WordPress.Security.NonceVerification.Missing
+        // phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended
 
         if ($file && $plugin && $action == 'edit-theme-plugin-file') {
             $pluginData = $this->getPluginData($plugin);

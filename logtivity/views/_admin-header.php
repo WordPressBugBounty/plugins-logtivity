@@ -22,21 +22,23 @@
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-$white_label = true;
-if(! isset($options['logtivity_enable_white_label_mode']) || $options['logtivity_enable_white_label_mode'] != '1') {
-	$white_label = false;
+$whiteLabel = true;
+if (! isset($options['logtivity_enable_white_label_mode']) || $options['logtivity_enable_white_label_mode'] != '1') {
+    $whiteLabel = false;
 }
+$whiteLabelIcon = plugin_dir_url('logtivity.php') . 'logtivity/assets/logtivity-logo-white.svg';
 ?>
 <div class="wrap">
 
-	<?php if (! $white_label): ?>
-		<div class="logtivity-header">
-			<img alt="Logtivity" src="<?php echo esc_url(plugin_dir_url('logtivity.php') . 'logtivity/assets/logtivity-logo-white.svg') ?>">
-		</div>
-	<?php endif ?>
+    <?php if (! $whiteLabel) : ?>
+        <div class="logtivity-header">
+            <img alt="Logtivity"
+                 src="<?php echo esc_url($whiteLabelIcon); ?>">
+        </div>
+    <?php endif ?>
 
-	<div id="poststuff">
+    <div id="poststuff">
 
-		<div id="post-body" class="<?php echo esc_attr('metabox-holder' . (! $white_label ? ' columns-2' : '')) ?>">
+        <div id="post-body" class="<?php echo esc_attr('metabox-holder' . (! $whiteLabel ? ' columns-2' : '')) ?>">
 
-			<div id="post-body-content">
+            <div id="post-body-content">

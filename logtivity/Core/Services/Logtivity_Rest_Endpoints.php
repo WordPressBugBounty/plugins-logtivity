@@ -58,7 +58,6 @@ class Logtivity_Rest_Endpoints
                             $response['version']                 = $this->getLogtivityVersion();
 
                             return $response;
-
                         } catch (Throwable $error) {
                             return new WP_Error(
                                 'logtivity_error',
@@ -71,7 +70,8 @@ class Logtivity_Rest_Endpoints
                             );
                         }
                     },
-                ]);
+                ]
+            );
         });
     }
 
@@ -121,13 +121,11 @@ class Logtivity_Rest_Endpoints
                             )
                         );
                     }
-
                 } else {
                     throw new Exception('Malformed header');
                 }
 
                 return true;
-
             } catch (Throwable $e) {
                 return new WP_Error('invalid_token', $e->getMessage(), ['status' => 401]);
             }

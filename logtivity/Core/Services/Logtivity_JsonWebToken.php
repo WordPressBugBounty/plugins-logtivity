@@ -68,14 +68,12 @@ class Logtivity_JsonWebToken
         $atoms = explode('.', $token);
         if (count($atoms) != 3) {
             throw new Exception('Invalid JWT Token');
-
         } else {
             [$header64, $payload64, $signature64] = $atoms;
 
             $signature = $this->base64Decode($signature64);
             if (!$signature) {
                 throw new Exception('Invalid JWT Signature');
-
             }
 
             $payloadJson = $this->base64Decode($payload64);
@@ -88,7 +86,6 @@ class Logtivity_JsonWebToken
                     }
 
                     return $payload;
-
                 } else {
                     throw new Exception('Invalid JWT Token');
                 }
@@ -174,7 +171,7 @@ class Logtivity_JsonWebToken
      */
     protected function jsonEncode(array $input): string
     {
-        return json_encode($input, JSON_UNESCAPED_SLASHES);
+        return wp_json_encode($input, JSON_UNESCAPED_SLASHES);
     }
 
     /**

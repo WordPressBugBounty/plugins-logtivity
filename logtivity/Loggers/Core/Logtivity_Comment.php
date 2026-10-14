@@ -36,7 +36,7 @@ class Logtivity_Comment
         if ($comment_approved !== 'spam') {
             Logtivity::log()
                 ->setAction('Comment Created')
-                ->setContext(substr(strip_tags($commentdata['comment_content']), 0, 30) . '...')
+                ->setContext(substr(wp_strip_all_tags($commentdata['comment_content']), 0, 30) . '...')
                 ->addMeta('Author', $commentdata['comment_author'] ?? null)
                 ->addMeta('Approved', $comment_approved)
                 ->addMeta('Post URL', get_permalink($commentdata['comment_post_ID']))

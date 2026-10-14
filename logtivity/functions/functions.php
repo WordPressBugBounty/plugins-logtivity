@@ -224,7 +224,8 @@ if (function_exists('logtivity_dd') == false) {
 
         return ucwords(
             str_replace(
-                ['_', '-'], ' ',
+                ['_', '-'],
+                ' ',
                 str_replace($wpdb->get_blog_prefix(), '', $label)
             )
         );

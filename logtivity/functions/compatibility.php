@@ -46,7 +46,8 @@ if (function_exists('get_user') == false) {
      *
      * @return WP_User|false WP_User object on success, false on failure.
      */
-    function get_user( $user_id ) {
-        return get_user_by( 'id', $user_id );
+    function get_user($user_id)
+    {
+        return get_user_by('id', $user_id);
     }
 }

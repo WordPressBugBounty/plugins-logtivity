@@ -173,7 +173,7 @@ class Logtivity_Memberpress extends Logtivity_Abstract_Logger
     public function emailSent($MeprBaseEmail, $values, $attachments)
     {
         (new Logtivity_Logger())
-            ->setAction(strip_tags($MeprBaseEmail->title) . ' Sent')
+            ->setAction(wp_strip_all_tags($MeprBaseEmail->title) . ' Sent')
             ->setContext($MeprBaseEmail->to)
             ->send();
     }

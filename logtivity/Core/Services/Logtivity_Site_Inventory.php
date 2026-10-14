@@ -104,7 +104,6 @@ class Logtivity_Site_Inventory
                         $pluginsWithUpdate->response[$filePath],
                         'requires_php'
                     );
-
                 } else {
                     $pluginData[$filePath]['update_available']         = false;
                     $pluginData[$filePath]['new_version']              = null;

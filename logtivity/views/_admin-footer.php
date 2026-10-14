@@ -23,19 +23,19 @@
  */
 
 ?>
-			<!-- #post-body-content -->
-			</div>
+            <!-- #post-body-content -->
+            </div>
 
-			<?php
+            <?php
             // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
             echo logtivity_view('_admin-sidebar', compact('options'));
             ?>
 
-		</div>
-		<!-- #post-body .metabox-holder .columns-2 -->
+        </div>
+        <!-- #post-body .metabox-holder .columns-2 -->
 
-		<br class="clear">
-	</div>
-	<!-- #poststuff -->
+        <br class="clear">
+    </div>
+    <!-- #poststuff -->
 
 </div> <!-- .wrap -->

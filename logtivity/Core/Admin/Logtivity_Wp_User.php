@@ -39,13 +39,10 @@ class Logtivity_Wp_User
             if (function_exists('wp_get_current_user')) {
                 $this->user = wp_get_current_user();
             }
-
         } elseif ($user instanceof WP_User) {
             $this->user = $user;
-
         } elseif ($user instanceof static) {
             $this->user = $user->user;
-
         } elseif (is_scalar($user) && function_exists('get_user_by')) {
             $this->user = get_user_by($field, $user) ?: null;
         }
@@ -75,6 +72,7 @@ class Logtivity_Wp_User
     {
         $users = get_users([
             'meta_key'    => $field,
+            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- infrequent admin lookup (e.g. by API key), not a hot path.
             'meta_value'  => $value,
             'number'      => 1,
             'count_total' => false,

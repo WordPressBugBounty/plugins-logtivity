@@ -49,7 +49,6 @@ abstract class Logtivity_Abstract_Logger
             /* Use a metadata table */
             $lastLogged     = (int)get_metadata($metaType, $id, static::LAST_LOGGED_KEY, true);
             $loggedRecently = (time() - $lastLogged) < static::LAST_LOGGED_SECONDS;
-
         } else {
             /* Metadata not available, use transients */
             $key = $this->getLastLoggedKey($id);
@@ -71,7 +70,6 @@ abstract class Logtivity_Abstract_Logger
         if ($metaType) {
             /* Use a metadata table */
             update_metadata($metaType, $id, static::LAST_LOGGED_KEY, time());
-
         } else {
             /* Metadata not available, using transients */
             $key = $this->getLastLoggedKey($id);

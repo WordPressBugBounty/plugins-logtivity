@@ -24,204 +24,221 @@
 
 class Logtivity_Easy_Digital_Downloads_Recurring extends Logtivity_Abstract_Easy_Digital_Downloads
 {
-	public function __construct()
-	{
-		add_action('edd_subscription_post_renew', [$this, 'subscriptionRenewed'], 10, 4);
-		add_action('edd_subscription_post_create', [$this, 'subscriptionCreated'], 10, 2);
-		add_action('edd_recurring_update_subscription', [$this, 'subscriptionUpdated'], 10, 3);
-		add_action('edd_subscription_status_change', [$this, 'subscriptionStatusChanged'], 10, 3);
-		add_action('edd_recurring_before_delete_subscription', [$this, 'subscriptionDeleted'], 10, 1);
-		add_action('edd_recurring_update_subscription_payment_method', [$this, 'setupPaymentMethodUpdate'], 9, 3);
-	}
+    public function __construct()
+    {
+        add_action('edd_subscription_post_renew', [$this, 'subscriptionRenewed'], 10, 4);
+        add_action('edd_subscription_post_create', [$this, 'subscriptionCreated'], 10, 2);
+        add_action('edd_recurring_update_subscription', [$this, 'subscriptionUpdated'], 10, 3);
+        add_action('edd_subscription_status_change', [$this, 'subscriptionStatusChanged'], 10, 3);
+        add_action('edd_recurring_before_delete_subscription', [$this, 'subscriptionDeleted'], 10, 1);
+        add_action('edd_recurring_update_subscription_payment_method', [$this, 'setupPaymentMethodUpdate'], 9, 3);
+    }
 
-	public function subscriptionRenewed($subscription_id, $expiration, $subscription, $payment_id)
-	{
-		$payment = new EDD_Payment($payment_id);
+    public function subscriptionRenewed($subscription_id, $expiration, $subscription, $payment_id)
+    {
+        $payment = new EDD_Payment($payment_id);
 
-		$log = Logtivity::log()
-			->setAction('Subscription Renewed')
-			->setContext($this->getDownloadTitle($subscription));
+        $log = Logtivity::log()
+            ->setAction('Subscription Renewed')
+            ->setContext($this->getDownloadTitle($subscription));
 
-		if (!is_user_logged_in()) {
-			$log->setUser($subscription->customer->user_id ?? null);
-		}
+        if (!is_user_logged_in()) {
+            $log->setUser($subscription->customer->user_id ?? null);
+        }
 
-		$log->setUser($payment->user_id ?? null)
-			->addMeta('Customer ID', $payment->customer_id)
-			->addMeta('Subscription ID', $subscription_id);
+        $log->setUser($payment->user_id ?? null)
+            ->addMeta('Customer ID', $payment->customer_id)
+            ->addMeta('Subscription ID', $subscription_id);
 
-			if (isset($expiration) && $expiration) {
-				try {
-					$log->addMeta('Expiration Date', date('M d Y', strtotime($expiration)));
-				} catch (Throwable $e) {
-                    // Ignore
-                    unset($e);
-				}
-			}
-
-		$log->addMeta('Payment ID', $payment_id)
-			->send();
-	}
-
-	public function subscriptionCreated($subscription_id, $args)
-	{
-		$subscription = new EDD_Subscription($subscription_id);
-
-		$log = Logtivity::log()
-			->setAction('Subscription Created')
-			->setContext($this->getDownloadTitle($subscription))
-			->addMeta('Customer ID', $subscription->customer_id)
-			->addMeta('Subscription ID', $subscription_id);
-
-		if (isset($args['expiration']) && $args['expiration']) {
-			try {
-				$log->addMeta('Expiration Date', date('M d Y', strtotime($args['expiration'])));
-			} catch (Throwable $e) {
+        if (isset($expiration) && $expiration) {
+            try {
+                $log->addMeta('Expiration Date', gmdate('M d Y', strtotime($expiration)));
+            } catch (Throwable $e) {
                 // Ignore
                 unset($e);
-			}
-		}
+            }
+        }
 
-		$log->send();
-	}
+        $log->addMeta('Payment ID', $payment_id)
+            ->send();
+    }
 
-	public function subscriptionUpdated($subscription_id, $args, $subscription)
-	{
-		$log = Logtivity::log()
-			->setAction('Subscription Updated');
+    public function subscriptionCreated($subscription_id, $args)
+    {
+        $subscription = new EDD_Subscription($subscription_id);
 
-		$current_product  = $subscription->product_id;
-		$current_price_id = $subscription->price_id;
+        $log = Logtivity::log()
+            ->setAction('Subscription Created')
+            ->setContext($this->getDownloadTitle($subscription))
+            ->addMeta('Customer ID', $subscription->customer_id)
+            ->addMeta('Subscription ID', $subscription_id);
 
-		if (isset($args['product_id']) && $current_product != $args['product_id']) {
-			$log->setContext('Product changed from '.logtivity_get_the_title($current_product).' to '.logtivity_get_the_title($args['product_id']));
-		}
-
-		if ( isset( $args['price_id'] ) && ! is_null( $args['price_id'] ) && $current_price_id != $args['price_id'] ) {
-			$prices = edd_get_variable_prices($args['product_id'] ?? $current_product);
-
-			if ($prices && count($prices)) {
-				if (isset($prices[$args['price_id']]) && isset($prices[$current_price_id])) {
-					$log->setContext('Price changed from '.$prices[$current_price_id]['name'].' to '.$prices[$args['price_id']]['name']);
-				}
-			} else {
-				$log->setContext('Price ID changed from '.$current_price_id.' to '.$args['price_id']);
-			}
-		}
-
-		if (!$log->context) {
-			return;
-		}
-
-		$log->addMeta('Customer ID', $subscription->customer_id)
-			->addMeta('Subscription ID', $subscription_id)
-			->addMeta('Product', logtivity_get_the_title($args['product_id'] ?? $current_product));
-
-		if (!is_user_logged_in()) {
-			$log->setUser($subscription->customer->user_id ?? null);
-		}
-
-		if ($subscription->expiration) {
-			try {
-				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
-			} catch (Throwable $e) {
+        if (isset($args['expiration']) && $args['expiration']) {
+            try {
+                $log->addMeta('Expiration Date', gmdate('M d Y', strtotime($args['expiration'])));
+            } catch (Throwable $e) {
                 // Ignore
                 unset($e);
-			}
-		}
+            }
+        }
 
-		$log->send();
-	}
+        $log->send();
+    }
 
-	public function subscriptionStatusChanged($old_status, $new_status, $subscription)
-	{
-		if ($old_status === $new_status) {
-			return;
-		}
+    public function subscriptionUpdated($subscription_id, $args, $subscription)
+    {
+        $log = Logtivity::log()
+            ->setAction('Subscription Updated');
 
-		$log = Logtivity::log()
-			->setAction('Subscription '. ucfirst($new_status))
-			->setContext($this->getDownloadTitle($subscription))
-			->addMeta('Old Status', $old_status)
-			->addMeta('Customer ID', $subscription->customer_id)
-			->addMeta('Subscription ID', $subscription->id);
+        $current_product  = $subscription->product_id;
+        $current_price_id = $subscription->price_id;
 
-		if (!is_user_logged_in()) {
-			$log->setUser($subscription->customer->user_id ?? null);
-		}
+        if (isset($args['product_id']) && $current_product != $args['product_id']) {
+            $log->setContext(
+                sprintf(
+                    'Product changed from %s to %s',
+                    logtivity_get_the_title($current_product),
+                    logtivity_get_the_title($args['product_id'])
+                )
+            );
+        }
 
-		if ($subscription->expiration) {
-			try {
-				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
-			} catch (Throwable $e) {
+        if (isset($args['price_id']) && !is_null($args['price_id']) && $current_price_id != $args['price_id']) {
+            $prices = edd_get_variable_prices($args['product_id'] ?? $current_product);
+
+            if ($prices && count($prices)) {
+                if (isset($prices[$args['price_id']]) && isset($prices[$current_price_id])) {
+                    $log->setContext(
+                        sprintf(
+                            'Price changed from %s to %s',
+                            $prices[$current_price_id]['name'],
+                            $prices[$args['price_id']]['name']
+                        )
+                    );
+                }
+            } else {
+                $log->setContext('Price ID changed from ' . $current_price_id . ' to ' . $args['price_id']);
+            }
+        }
+
+        if (!$log->context) {
+            return;
+        }
+
+        $log->addMeta('Customer ID', $subscription->customer_id)
+            ->addMeta('Subscription ID', $subscription_id)
+            ->addMeta('Product', logtivity_get_the_title($args['product_id'] ?? $current_product));
+
+        if (!is_user_logged_in()) {
+            $log->setUser($subscription->customer->user_id ?? null);
+        }
+
+        if ($subscription->expiration) {
+            try {
+                $log->addMeta('Expiration Date', gmdate('M d Y', strtotime($subscription->expiration)));
+            } catch (Throwable $e) {
                 // Ignore
                 unset($e);
-			}
-		}
+            }
+        }
 
-		$log->send();
-	}
+        $log->send();
+    }
 
-	public function subscriptionDeleted($subscription)
-	{
-		$log = Logtivity::log()
-			->setAction('Subscription Deleted')
-			->setContext($this->getDownloadTitle($subscription))
-			->addMeta('Customer ID', $subscription->customer_id)
-			->addMeta('Subscription ID', $subscription->id);
+    public function subscriptionStatusChanged($old_status, $new_status, $subscription)
+    {
+        if ($old_status === $new_status) {
+            return;
+        }
 
-		if (!is_user_logged_in()) {
-			$log->setUser($subscription->customer->user_id ?? null);
-		}
+        $log = Logtivity::log()
+            ->setAction('Subscription ' . ucfirst($new_status))
+            ->setContext($this->getDownloadTitle($subscription))
+            ->addMeta('Old Status', $old_status)
+            ->addMeta('Customer ID', $subscription->customer_id)
+            ->addMeta('Subscription ID', $subscription->id);
 
-		if ($subscription->expiration) {
-			try {
-				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
-			} catch (Throwable $e) {
+        if (!is_user_logged_in()) {
+            $log->setUser($subscription->customer->user_id ?? null);
+        }
+
+        if ($subscription->expiration) {
+            try {
+                $log->addMeta('Expiration Date', gmdate('M d Y', strtotime($subscription->expiration)));
+            } catch (Throwable $e) {
                 // Ignore
                 unset($e);
-			}
-		}
+            }
+        }
 
-		$log->send();
-	}
+        $log->send();
+    }
 
-	public function setupPaymentMethodUpdate($user_id, $subscription_id, $verified)
-	{
-		$subscription = new EDD_Subscription($subscription_id);
+    public function subscriptionDeleted($subscription)
+    {
+        $log = Logtivity::log()
+            ->setAction('Subscription Deleted')
+            ->setContext($this->getDownloadTitle($subscription))
+            ->addMeta('Customer ID', $subscription->customer_id)
+            ->addMeta('Subscription ID', $subscription->id);
 
-		add_action( 'edd_recurring_update_' . $subscription->gateway .'_subscription', [$this, 'paymentMethodUpdated'], 999999999999, 2);
-	}
+        if (!is_user_logged_in()) {
+            $log->setUser($subscription->customer->user_id ?? null);
+        }
 
-	public function paymentMethodUpdated($subscriber, $subscription)
-	{
-		$errors = edd_get_errors();
-
-		if (!empty($errors)) {
-			return;
-		}
-
-		$log = Logtivity::log()
-			->setAction('Payment Method Updated')
-			->setContext($subscription->gateway)
-			->addMeta('Customer ID', $subscription->customer_id)
-			->addMeta('Subscription ID', $subscription->id);
-
-		if (!is_user_logged_in()) {
-			$log->setUser($subscription->customer->user_id ?? null);
-		}
-
-		if ($subscription->expiration) {
-			try {
-				$log->addMeta('Expiration Date', date('M d Y', strtotime($subscription->expiration)));
-			} catch (Throwable $e) {
+        if ($subscription->expiration) {
+            try {
+                $log->addMeta('Expiration Date', gmdate('M d Y', strtotime($subscription->expiration)));
+            } catch (Throwable $e) {
                 // Ignore
                 unset($e);
-			}
-		}
+            }
+        }
 
-		$log->send();
-	}
+        $log->send();
+    }
+
+    public function setupPaymentMethodUpdate($user_id, $subscription_id, $verified)
+    {
+        $subscription = new EDD_Subscription($subscription_id);
+
+        add_action(
+            'edd_recurring_update_' . $subscription->gateway . '_subscription',
+            [$this, 'paymentMethodUpdated'],
+            999999999999,
+            2
+        );
+    }
+
+    public function paymentMethodUpdated($subscriber, $subscription)
+    {
+        $errors = edd_get_errors();
+
+        if (!empty($errors)) {
+            return;
+        }
+
+        $log = Logtivity::log()
+            ->setAction('Payment Method Updated')
+            ->setContext($subscription->gateway)
+            ->addMeta('Customer ID', $subscription->customer_id)
+            ->addMeta('Subscription ID', $subscription->id);
+
+        if (!is_user_logged_in()) {
+            $log->setUser($subscription->customer->user_id ?? null);
+        }
+
+        if ($subscription->expiration) {
+            try {
+                $log->addMeta('Expiration Date', gmdate('M d Y', strtotime($subscription->expiration)));
+            } catch (Throwable $e) {
+                // Ignore
+                unset($e);
+            }
+        }
+
+        $log->send();
+    }
 }
 
 new Logtivity_Easy_Digital_Downloads_Recurring();

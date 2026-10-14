@@ -24,149 +24,152 @@
 
 class Logtivity_Formidable
 {
-	protected $hashFieldTypes = [
-		'password',
-		'credit_card',
-	];
+    protected $hashFieldTypes = [
+        'password',
+        'credit_card',
+    ];
 
-	protected $ignoreFieldTypes = [
-		'divider',
-		'end_divider',
-	];
+    protected $ignoreFieldTypes = [
+        'divider',
+        'end_divider',
+    ];
 
-	public function __construct()
-	{
-		add_action('frm_after_create_entry', [$this, 'entryCreated'], 10, 3);
-	}
+    public function __construct()
+    {
+        add_action('frm_after_create_entry', [$this, 'entryCreated'], 10, 3);
+    }
 
-	public function entryCreated($entry_id, $form_id, $is_child)
-	{
-		if (apply_filters('logtivity_disable_formidable_logging', false)) {
-			return;
-		}
+    public function entryCreated($entry_id, $form_id, $is_child)
+    {
+        if (apply_filters('logtivity_disable_formidable_logging', false)) {
+            return;
+        }
 
-		try {
-			$entry = FrmEntry::getOne( $entry_id, true );
+        try {
+            $entry = FrmEntry::getOne($entry_id, true);
 
-			$FrmEntryFormatter = new Logtivity_FrmEntryFormatter([
-				'entry' => $entry,
-				'format' => 'array',
-			]);
+            $FrmEntryFormatter = new Logtivity_FrmEntryFormatter([
+                'entry'  => $entry,
+                'format' => 'array',
+            ]);
 
-			$log = Logtivity::log()
-				->setAction('Form Submitted')
-				->setContext($entry->form_name)
-				->addMeta('Form ID', $form_id)
-				->addMeta('Entry ID', $entry_id);
+            $log = Logtivity::log()
+                ->setAction('Form Submitted')
+                ->setContext($entry->form_name)
+                ->addMeta('Form ID', $form_id)
+                ->addMeta('Entry ID', $entry_id);
 
-				try {
+            try {
+                if (class_exists('FrmProEntriesController')) {
+                    if (isset($is_child['is_child']) && $is_child['is_child'] === true) {
+                        return;
+                    }
+                    $entry = FrmProEntriesController::show_entry_shortcode(
+                        [
+                            'id'     => $entry_id,
+                            'format' => 'array',
+                        ]
+                    );
 
-					if (class_exists('FrmProEntriesController')) {
-						if (isset($is_child['is_child']) && $is_child['is_child'] === true) {
-							return;
-						}
-						$entry = FrmProEntriesController::show_entry_shortcode( array( 'id' => $entry_id, 'format' => 'array' ) );
+                    $seenSubFields = [];
 
-						$seenSubFields = [];
+                    foreach ($entry as $key => $value) {
+                        if (isset($value['form'])) {
+                            foreach ($value as $key => $sub_fields) {
+                                if ($key != 'form') {
+                                    foreach ($sub_fields as $key => $value) {
+                                        $seenSubFields[$key] = $key;
+                                        $this->maybeStoreField($log, $key, $value);
+                                    }
+                                }
+                            }
+                        } else {
+                            if (isset($seenSubFields[$key])) {
+                                unset($seenSubFields[$key]);
+                                continue;
+                            }
+                            $this->maybeStoreField($log, $key, $value);
+                        }
+                    }
+                } else {
+                    foreach ($FrmEntryFormatter->logtivityGetEntryValues() as $key => $field_value) {
+                        $field_value->prepare_displayed_value();
 
-						foreach ($entry as $key => $value) {
-							if (isset($value['form'])) {
-								foreach ($value as $key => $sub_fields) {
-									if ($key != 'form') {
-										foreach ($sub_fields as $key => $value) {
-											$seenSubFields[$key] = $key;
-											$this->maybeStoreField($log, $key, $value);
-										}
-									}
-								}
-							} else {
-								if (isset($seenSubFields[$key])) {
-									unset($seenSubFields[$key]);
-									continue;
-								}
-								$this->maybeStoreField($log, $key, $value);
-							}
-						}
-					} else {
-						foreach ($FrmEntryFormatter->logtivityGetEntryValues() as $key => $field_value) {
-							$field_value->prepare_displayed_value();
+                        if (
+                            $this->shouldStoreField(
+                                $field_value->get_field_type(),
+                                $field_value->get_field_key(),
+                                $field_value->get_displayed_value()
+                            )
+                        ) {
+                            $log->addMeta(
+                                $field_value->get_field_label(),
+                                $this->maybeLogFormValue(
+                                    $field_value->get_field_type(),
+                                    $field_value->get_displayed_value()
+                                )
+                            );
+                        }
+                    }
+                }
+            } catch (Throwable $e) {
+                // Ignore
+                unset($e);
+            }
 
-							if (
-								$this->shouldStoreField(
-									$field_value->get_field_type(),
-									$field_value->get_field_key(),
-									$field_value->get_displayed_value()
-								)
-							) {
-								$log->addMeta(
-									$field_value->get_field_label(),
-									$this->maybeLogFormValue(
-										$field_value->get_field_type(),
-										$field_value->get_displayed_value()
-									)
-								);
-							}
-						}
-					}
+            $log->send();
+        } catch (Throwable $e) {
+            // Keep Formidable submissions working if optional logging metadata fails.
+            unset($e);
+        }
+    }
 
-				} catch (Throwable $e) {
-                    // Ignore
-                    unset($e);
-			}
+    private function maybeStoreField($log, $key, $value)
+    {
+        $field = FrmField::getOne(str_replace('-value', '', $key));
 
-			$log->send();
-		} catch (Throwable $e) {
-			// Keep Formidable submissions working if optional logging metadata fails.
-			unset($e);
-		}
-	}
+        if (strpos($key, '-value') !== false) {
+            if ($field->type != 'address') {
+                return;
+            }
+        }
 
-	private function maybeStoreField($log, $key, $value)
-	{
-		$field = FrmField::getOne( str_replace('-value', '', $key) );
+        if ($this->shouldStoreField($field->type, $field->field_key, $value)) {
+            $value = $this->maybeLogFormValue($field->type, $value);
+            if ($value) {
+                $log->addMeta($field->name, $value);
+            }
+        }
+    }
 
-		if (strpos($key, '-value') !== false) {
-			if ($field->type != 'address') {
-				return;
-			}
-		}
+    private function shouldStoreField($field_type, $field_key, $value)
+    {
+        if (in_array($field_type, $this->ignoreFieldTypes)) {
+            return false;
+        }
 
-		if ($this->shouldStoreField($field->type, $field->field_key, $value)) {
-			$value = $this->maybeLogFormValue($field->type, $value);
-			if ($value) {
-				$log->addMeta($field->name, $value);
-			}
-		}
-	}
+        if (!$value) {
+            return false;
+        }
 
-	private function shouldStoreField($field_type, $field_key, $value)
-	{
-		if (in_array($field_type, $this->ignoreFieldTypes)) {
-			return false;
-		}
+        return apply_filters('logtivity_should_store_formidable_field_value', true, $field_key, $field_type);
+    }
 
-		if (!$value) {
-			return false;
-		}
+    private function maybeLogFormValue($field_type, $value)
+    {
+        if (in_array($field_type, $this->hashFieldTypes)) {
+            return '********';
+        }
 
-		return apply_filters('logtivity_should_store_formidable_field_value', true, $field_key, $field_type);
-	}
+        if ($field_type == 'address') {
+            if (is_array($value)) {
+                return implode(', ', $value);
+            }
+            return;
+        }
 
-	private function maybeLogFormValue($field_type, $value)
-	{
-		if (in_array($field_type, $this->hashFieldTypes)) {
-			return '********';
-		}
-
-		if ($field_type == 'address') {
-			if (is_array($value)) {
-				return implode(', ', $value);
-			}
-			return;
-		}
-
-		return $value;
-	}
+        return $value;
+    }
 }
 
-$Logtivity_Formidable = new Logtivity_Formidable;
+$Logtivity_Formidable = new Logtivity_Formidable();

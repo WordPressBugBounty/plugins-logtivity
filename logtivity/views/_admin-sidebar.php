@@ -40,9 +40,9 @@ $isWelcome = !($options['logtivity_site_api_key'] ?? false);
     <div class="postbox">
         <?php
         if ($isWelcome) : ?>
-            <h2><span><?php esc_attr_e('Welcome to Logtivity', 'logtivity'); ?></span></h2>
+            <h2><span><?php esc_html_e('Welcome to Logtivity', 'logtivity'); ?></span></h2>
         <?php else : ?>
-            <h2><span><?php esc_attr_e('Logtivity', 'logtivity'); ?></span></h2>
+            <h2><span><?php esc_html_e('Logtivity', 'logtivity'); ?></span></h2>
         <?php endif; ?>
 
         <div class="inside">
@@ -51,8 +51,9 @@ $isWelcome = !($options['logtivity_site_api_key'] ?? false);
                 <p>
                     <?php
                     esc_html_e(
-                        "Logtivity is a hosted service that provides activity logs for your WordPress site. 
-                        This is better than using an activity log plugin because you don’t need to store huge amounts of data on your own server.",
+                        'Logtivity is a hosted service that provides activity logs for your WordPress site.'
+                        . ' This is better than using an activity log plugin because you don’t need to'
+                        . ' store huge amounts of data on your own server.',
                         'logtivity'
                     );
                     ?>
@@ -60,7 +61,8 @@ $isWelcome = !($options['logtivity_site_api_key'] ?? false);
                 <p>
                     <?php
                     esc_html_e(
-                        "Logtivity's dashboard gives you one place to monitor changes and activity across all your WordPress sites.",
+                        "Logtivity's dashboard gives you one place to monitor'
+                         . ' changes and activity across all your WordPress sites.",
                         'logtivity'
                     );
                     ?>
@@ -77,25 +79,26 @@ $isWelcome = !($options['logtivity_site_api_key'] ?? false);
                 <p>
                     <?php
                     esc_html_e(
-                        'You can also create beautiful charts, allowing you to visualise the actions made on your site with ease.',
+                        'You can also create beautiful charts,'
+                         . ' allowing you to visualise the actions made on your site with ease.',
                         'logtivity'
                     );
                     ?>
                 </p>
                 <p>
-	                    <a class="button-primary logtivity-button logtivity-button-primary"
-	                       target="_blank"
-	                       rel="noopener noreferrer"
-	                       href="<?php echo esc_url(logtivity_get_app_url() . '/register'); ?>">
+                        <a class="button-primary logtivity-button logtivity-button-primary"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           href="<?php echo esc_url(logtivity_get_app_url() . '/register'); ?>">
                         <?php esc_attr_e('Start your free 10 day trial', 'logtivity'); ?>
                     </a>
                 </p>
             <?php endif ?>
             <ul>
-	                <li>
-	                    <a target="_blank"
-	                       rel="noopener noreferrer"
-	                       href="<?php echo esc_url(logtivity_get_app_url()); ?>">
+                    <li>
+                        <a target="_blank"
+                           rel="noopener noreferrer"
+                           href="<?php echo esc_url(logtivity_get_app_url()); ?>">
                         <?php esc_html_e('Logtivity Dashboard', 'logtivity'); ?>
                     </a>
                 </li>

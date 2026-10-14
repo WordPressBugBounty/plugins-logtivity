@@ -24,103 +24,103 @@
 
 class Logtivity_WP_All_Import
 {
-	protected $allowedAllImportLogs = [
-		'All Import Running',
-		'All Import Completed',
-	];
+    protected $allowedAllImportLogs = [
+        'All Import Running',
+        'All Import Completed',
+    ];
 
-	public function __construct()
-	{
-		if ($this->isImporting()) {
-			$this->logImportButDisableIndividualChanges();
-		}
+    public function __construct()
+    {
+        if ($this->isImporting()) {
+            $this->logImportButDisableIndividualChanges();
+        }
 
-		add_action('pmxi_before_xml_import', [$this, 'importRunning'], 10, 1);
-		add_action('pmxi_after_xml_import', [$this, 'importCompleted'], 10, 2);
-	}
+        add_action('pmxi_before_xml_import', [$this, 'importRunning'], 10, 1);
+        add_action('pmxi_after_xml_import', [$this, 'importCompleted'], 10, 2);
+    }
 
-	public function importRunning($import_id)
-	{
-		Logtivity::log()
-			->setAction('All Import Running')
-			->setContext($import_id)
-			->addMeta('Import ID', $import_id)
-			->send();
-	}
+    public function importRunning($import_id)
+    {
+        Logtivity::log()
+            ->setAction('All Import Running')
+            ->setContext($import_id)
+            ->addMeta('Import ID', $import_id)
+            ->send();
+    }
 
-	public function importCompleted($import_id, $import)
-	{
-		Logtivity::log()
-			->setAction('All Import Completed')
-			->setContext($import_id)
-			->addMeta('Import ID', $import_id)
-			->send();
-	}
+    public function importCompleted($import_id, $import)
+    {
+        Logtivity::log()
+            ->setAction('All Import Completed')
+            ->setContext($import_id)
+            ->addMeta('Import ID', $import_id)
+            ->send();
+    }
 
-	public function isImporting()
-	{
+    public function isImporting()
+    {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Passive import-state detection for WP All Import requests.
-		$page      = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-		$action    = isset( $_GET['action'] ) ? sanitize_key( wp_unslash( $_GET['action'] ) ) : '';
-		$q         = isset( $_GET['q'] ) ? sanitize_text_field( wp_unslash( $_GET['q'] ) ) : '';
-		$import_id = isset( $_GET['import_id'] ) ? absint( wp_unslash( $_GET['import_id'] ) ) : 0;
+        $page      = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+        $action    = isset($_GET['action']) ? sanitize_key(wp_unslash($_GET['action'])) : '';
+        $q         = isset($_GET['q']) ? sanitize_text_field(wp_unslash($_GET['q'])) : '';
+        $import_id = isset($_GET['import_id']) ? absint(wp_unslash($_GET['import_id'])) : 0;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
-		// Manually running an import
-		$manual_run = $page == 'pmxi-admin-import' || $page == 'pmxi-admin-manage';
+        // Manually running an import
+        $manual_run = $page == 'pmxi-admin-import' || $page == 'pmxi-admin-manage';
 
-		// Cron jobs running an import
-		$cron_run = $import_id && $action == 'processing';
+        // Cron jobs running an import
+        $cron_run = $import_id && $action == 'processing';
 
-		// Automatic Scheduling service running an import
-		$automatic_scheduling_run = $action == 'wpai_public_api' && $q == 'scheduling/process';
+        // Automatic Scheduling service running an import
+        $automatic_scheduling_run = $action == 'wpai_public_api' && $q == 'scheduling/process';
 
-		// Manually uploading an import file
-		$manual_upload = $page == 'pmxi-admin-settings' && $action == 'upload';
+        // Manually uploading an import file
+        $manual_upload = $page == 'pmxi-admin-settings' && $action == 'upload';
 
-		// Extra check: see if import ID is numeric
-		$import_id = is_numeric( $this->wp_all_import_get_import_id() );
+        // Extra check: see if import ID is numeric
+        $import_id = is_numeric($this->wpAllImportGetImportId());
 
-		// Check if they're importing
-		if ( $manual_run || $cron_run || $automatic_scheduling_run || $manual_upload || $import_id ) {
-			return true;
-		}
-	}
+        // Check if they're importing
+        if ($manual_run || $cron_run || $automatic_scheduling_run || $manual_upload || $import_id) {
+            return true;
+        }
+    }
 
-	public function logImportButDisableIndividualChanges()
-	{
-		add_action('wp_logtivity_instance', function($Logtivity_Logger) {
-			if (!in_array($Logtivity_Logger->action, $this->allowedAllImportLogs)) {
-				$Logtivity_Logger->stop();
-			}
-		});
-	}
+    public function logImportButDisableIndividualChanges()
+    {
+        add_action('wp_logtivity_instance', function ($Logtivity_Logger) {
+            if (!in_array($Logtivity_Logger->action, $this->allowedAllImportLogs)) {
+                $Logtivity_Logger->stop();
+            }
+        });
+    }
 
-    public function wp_all_import_get_import_id() {
+    public function wpAllImportGetImportId()
+    {
         global $argv;
         $import_id = 'new';
 
-        if ( ! empty( $argv ) ) {
-            $import_id_arr = array_filter( $argv, function( $a ) {
-                return ( is_numeric( $a ) ) ? true : false;
+        if (! empty($argv)) {
+            $import_id_arr = array_filter($argv, function ($a) {
+                return ( is_numeric($a) ) ? true : false;
             });
 
-            if ( ! empty( $import_id_arr ) ) {
-                $import_id = reset( $import_id_arr );
+            if (! empty($import_id_arr)) {
+                $import_id = reset($import_id_arr);
             }
         }
 
-	        if ( $import_id == 'new' ) {
-	            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Passive import-state detection for WP All Import requests.
-	            if ( isset( $_GET['import_id'] ) ) {
-	                $import_id = absint( wp_unslash( $_GET['import_id'] ) );
-            // } elseif ( isset( $_GET['id'] ) ) {
-            //     $import_id = intval($_GET['id']);
+        if ($import_id == 'new') {
+            // phpcs:disable WordPress.Security.NonceVerification.Recommended -- Passive import-state detection for WP All Import requests.
+            if (isset($_GET['import_id'])) {
+                $import_id = absint(wp_unslash($_GET['import_id']));
             }
+            // phpcs:enable WordPress.Security.NonceVerification.Recommended
         }
 
         return $import_id;
     }
 }
 
-$Logtivity_WP_All_Import = new Logtivity_WP_All_Import;
+$Logtivity_WP_All_Import = new Logtivity_WP_All_Import();

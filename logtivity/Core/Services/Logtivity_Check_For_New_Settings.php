@@ -96,7 +96,6 @@ class Logtivity_Check_For_New_Settings
             if ($settings) {
                 $api->updateSettings($settings);
             }
-
         } catch (Throwable $error) {
             // Ignore
             unset($error);

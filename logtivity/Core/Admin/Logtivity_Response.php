@@ -79,7 +79,6 @@ class Logtivity_Response
             $this->message = $this->response->get_error_code();
             $this->error   = $this->response->get_error_message() ?: $this->response->get_error_code();
             $this->body    = get_object_vars($this->response);
-
         } else {
             $this->code    = wp_remote_retrieve_response_code($this->response);
             $this->message = wp_remote_retrieve_response_message($this->response);
@@ -87,7 +86,6 @@ class Logtivity_Response
 
             if ($this->code < 400) {
                 $this->error = $responseBody['error'] ?? null;
-
             } else {
                 $this->error   = $this->message;
                 $this->message = (($this->body['message'] ?? $this->message) ?: 'Unknown error');

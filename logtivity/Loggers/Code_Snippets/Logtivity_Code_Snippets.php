@@ -67,7 +67,6 @@ class Logtivity_Code_Snippets
 
         if (is_object($snippet)) {
             $this->logWithMeta($logger, $snippet);
-
         } else {
             $logger
                 ->addMeta('Network', $network ? 'Yes' : 'No')

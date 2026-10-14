@@ -25,6 +25,17 @@
 class Logtivity_User extends Logtivity_Abstract_Logger
 {
     /**
+     * Meta keys matching this pattern are never sent to the API in full. A
+     * change to one is still reported — only the value is hidden — so e.g. a
+     * 2FA reset, a new application password, or a fresh session stays visible
+     * in the audit trail without exposing the credential itself.
+     *
+     * @var string
+     */
+    // phpcs:ignore Generic.Files.LineLength.TooLong
+    protected const SENSITIVE_META_PATTERN = '/password|secret|totp|backup_code|session_token|private_key|api_key|access_token|refresh_token|webauthn/i';
+
+    /**
      * @var array
      */
     protected array $meta = [];
@@ -65,7 +76,7 @@ class Logtivity_User extends Logtivity_Abstract_Logger
     {
         $log = Logtivity::log()->setUser($user);
 
-        $log->setAction('User Logged In')->setContext($log->user->getRole())->send();
+        $log->setAction('User Logged In')->setContext($log->user->userLogin())->send();
     }
 
     /**
@@ -80,7 +91,7 @@ class Logtivity_User extends Logtivity_Abstract_Logger
 
             $logger
                 ->setAction('User Logged Out')
-                ->setContext($logger->user->getRole())
+                ->setContext($logger->user->userLogin())
                 ->send();
         }
     }
@@ -92,21 +103,16 @@ class Logtivity_User extends Logtivity_Abstract_Logger
      */
     public function user_register($userId): void
     {
-        $log = Logtivity::log();
-
-        if (is_user_logged_in() == false) {
-            $log->setUser($userId);
-            $user = $log->user;
-        } else {
-            $user = new Logtivity_WP_User($userId);
-        }
-
+        $user = new Logtivity_WP_User($userId);
         $meta = $this->getMetadata('user', $userId);
 
-        Logtivity::log('User Created')
-            ->setContext($user->getRole())
+        // Self-registration has no logged-in actor, so the registering user is the actor.
+        $actorId = is_user_logged_in() ? null : $userId;
+
+        Logtivity::log('User Created', null, $actorId)
+            ->setContext($user->userLogin())
             ->addMetaArray($this->sanitizeDataFields($user->to_array()))
-            ->addMetaArray($this->sanitizeDataFields($meta))
+            ->addMetaArray($this->sanitizeDataFields($this->redactSensitiveMeta($meta)))
             ->send();
     }
 
@@ -124,10 +130,10 @@ class Logtivity_User extends Logtivity_Abstract_Logger
         $meta         = $this->getMetadata('user', $userId);
 
         Logtivity::log('User Deleted')
-            ->setContext($user->getRole())
-            ->addMetaIf($assignToUser, 'Reassign Content To', $assignToUser->user_login)
+            ->setContext($user->userLogin())
+            ->addMetaIf($assignToUser, 'Reassign Content To', $assignToUser ? $assignToUser->user_login : null)
             ->addMetaArray($this->sanitizeDataFields($user->to_array()))
-            ->addMetaArray($this->sanitizeDataFields($meta))
+            ->addMetaArray($this->sanitizeDataFields($this->redactSensitiveMeta($meta)))
             ->send();
     }
 
@@ -153,15 +159,17 @@ class Logtivity_User extends Logtivity_Abstract_Logger
         $oldUserdata = $this->sanitizeDataFields($oldUserdata);
         $userdata    = $this->sanitizeDataFields($userdata);
         if ($passwordChange || $oldUserdata != $userdata || $oldMeta != $meta) {
+            [$safeOldMeta, $safeMeta] = $this->redactSensitiveMetaChanges($oldMeta, $meta);
+
             Logtivity::log('User Updated')
-                ->setContext($user->getRole())
+                ->setContext($user->userLogin())
                 ->addMeta('User ID', $user->id())
                 ->addMeta('Username', $user->userLogin())
                 ->addMeta('Role', $user->getRole())
                 ->addMetaIf($passwordChange, 'Password Changed', 'Yes')
                 ->addMetaIf($activationKey, 'Activation Pending', 'Yes')
                 ->addMetaChanges($oldUserdata, $userdata)
-                ->addMetaChanges($oldMeta, $meta)
+                ->addMetaChanges($safeOldMeta, $safeMeta)
                 ->send();
         }
     }
@@ -250,6 +258,61 @@ class Logtivity_User extends Logtivity_Abstract_Logger
         }
 
         return parent::sanitizeDataFields($fields);
+    }
+
+    /**
+     * Mask sensitive values in a meta snapshot that is about to be logged in
+     * full (user creation or deletion), where there is no "before" state to
+     * diff against.
+     *
+     * @param array $meta
+     *
+     * @return array
+     */
+    protected function redactSensitiveMeta(array $meta): array
+    {
+        foreach ($meta as $key => $value) {
+            if (preg_match(static::SENSITIVE_META_PATTERN, $key)) {
+                $meta[$key] = '[Hidden]';
+            }
+        }
+
+        return $meta;
+    }
+
+    /**
+     * Mask sensitive values in a before/after meta pair that is about to be
+     * diffed and logged. A sensitive key that changed is still reported as
+     * changed, with both sides replaced by distinct markers so the diff still
+     * renders; a sensitive key that did not change is dropped entirely so it
+     * never reaches the API.
+     *
+     * @param array $oldMeta
+     * @param array $meta
+     *
+     * @return array
+     */
+    protected function redactSensitiveMetaChanges(array $oldMeta, array $meta): array
+    {
+        foreach (array_unique(array_merge(array_keys($oldMeta), array_keys($meta))) as $key) {
+            if (preg_match(static::SENSITIVE_META_PATTERN, $key) == false) {
+                continue;
+            }
+
+            if (($oldMeta[$key] ?? null) === ($meta[$key] ?? null)) {
+                unset($oldMeta[$key], $meta[$key]);
+                continue;
+            }
+
+            if (array_key_exists($key, $oldMeta)) {
+                $oldMeta[$key] = '[Hidden]';
+            }
+            if (array_key_exists($key, $meta)) {
+                $meta[$key] = '[Hidden - Changed]';
+            }
+        }
+
+        return [$oldMeta, $meta];
     }
 }
 

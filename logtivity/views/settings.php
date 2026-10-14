@@ -43,7 +43,7 @@ echo logtivity_view('_admin-header', compact('options'));
     <div class="inside">
         <h1 style="padding-top: 20px;">Settings</h1>
 
-        <?php if (logtivity_has_site_url_changed()): ?>
+        <?php if (logtivity_has_site_url_changed()) : ?>
             <div class="logtivity-notice logtivity-notice-danger">
                 <h2>We've detected a change in your site URL.</h2>
                 <div>
@@ -70,17 +70,18 @@ echo logtivity_view('_admin-header', compact('options'));
             <div class="logtivity-notice logtivity-notice-warning">
                 <h2>This site is not sending logs to the production application.</h2>
                 <div>
-	                    See your dashboard at
-	                    <a target="_blank"
-	                       rel="noopener noreferrer"
-	                       href="<?php echo esc_url(logtivity_get_app_url()); ?>">
-	                        <?php esc_html_e('Logtivity dashboard', 'logtivity'); ?>
-	                    </a>
+                    See your dashboard at
+                    <a target="_blank"
+                       rel="noopener noreferrer"
+                       href="<?php echo esc_url(logtivity_get_app_url()); ?>">
+                        <?php esc_html_e('Logtivity dashboard', 'logtivity'); ?>
+                    </a>
                 </div>
             </div>
         <?php endif; ?>
 
-        <form action="<?php echo esc_url(admin_url('admin-ajax.php?action=logtivity_update_settings')); ?>" method="post">
+        <form action="<?php echo esc_url(admin_url('admin-ajax.php?action=logtivity_update_settings')); ?>"
+              method="post">
 
             <?php wp_nonce_field('logtivity_update_settings', 'logtivity_update_settings') ?>
 
@@ -89,7 +90,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 <tr class="user-user-login-wrap">
                     <th scope="row">
                         <label for="logtivity_site_api_key">Site API Key</label>
-                        <?php if (has_filter('logtivity_site_api_key')): ?>
+                        <?php if (has_filter('logtivity_site_api_key')) : ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
                         <?php endif ?>
                     </th>
@@ -99,7 +100,7 @@ echo logtivity_view('_admin-header', compact('options'));
                                name="logtivity_site_api_key"
                                type="text"
                                 <?php echo has_filter('logtivity_site_api_key') ? 'readonly' : ''; ?>
-	                               value="<?php echo esc_attr($apiKey); ?>"
+                               value="<?php echo esc_attr($apiKey); ?>"
                                class="regular-text">
                         <p>
                             Status:
@@ -111,15 +112,21 @@ echo logtivity_view('_admin-header', compact('options'));
 
                                 case 'paused':
                                     echo '<span style="color: #dbbf24; font-weight: bold;">Logging is paused</span>';
-	                                    echo '<br>' . esc_html($api->getConnectionMessage());
+                                    echo '<br>' . esc_html($api->getConnectionMessage());
                                     break;
 
                                 case 'staging':
-	                                    echo '<span style="color: #dbbf24; font-weight: bold;">' . esc_html($api->getConnectionMessage()) . '</span>';
+                                    echo sprintf(
+                                        '<span style="color: #dbbf24; font-weight: bold;">%s</span>',
+                                        esc_html($api->getConnectionMessage())
+                                    );
                                     break;
 
                                 case 'fail':
-	                                    echo '<span style="color: #ff3232; font-weight: bold;">' . esc_html($api->getConnectionMessage()) . '</span>';
+                                    echo sprintf(
+                                        '<span style="color: #ff3232; font-weight: bold;">%s</span>',
+                                        esc_html($api->getConnectionMessage())
+                                    );
                                     break;
 
                                 default:
@@ -145,7 +152,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 <tr class="user-user-login-wrap">
                     <th scope="row">
                         <label for="logtivity_should_store_user_id">Store User ID</label>
-                        <?php if (has_filter('logtivity_should_store_user_id')): ?>
+                        <?php if (has_filter('logtivity_should_store_user_id')) : ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
                         <?php endif ?>
                     </th>
@@ -175,7 +182,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 <tr class="user-user-login-wrap">
                     <th scope="row">
                         <label for="logtivity_should_log_profile_link">Store Users Profile Link</label>
-                        <?php if (has_filter('logtivity_should_log_profile_link')): ?>
+                        <?php if (has_filter('logtivity_should_log_profile_link')) : ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
                         <?php endif ?>
                     </th>
@@ -205,7 +212,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 <tr class="user-user-login-wrap">
                     <th scope="row">
                         <label for="logtivity_should_log_username">Store Users Username</label>
-                        <?php if (has_filter('logtivity_should_log_username')): ?>
+                        <?php if (has_filter('logtivity_should_log_username')) : ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
                         <?php endif ?>
                     </th>
@@ -235,7 +242,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 <tr class="user-user-login-wrap">
                     <th scope="row">
                         <label for="logtivity_should_store_ip">Store Users IP Address</label>
-                        <?php if (has_filter('logtivity_should_store_ip')): ?>
+                        <?php if (has_filter('logtivity_should_store_ip')) : ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
                         <?php endif ?>
                     </th>
@@ -267,7 +274,7 @@ echo logtivity_view('_admin-header', compact('options'));
                         <label for="logtivity_app_verify_url">
                             Verify Site URL
                         </label>
-                        <?php if (has_filter('logtivity_app_verify_url')): ?>
+                        <?php if (has_filter('logtivity_app_verify_url')) : ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
                         <?php endif ?>
                     </th>
@@ -300,7 +307,7 @@ echo logtivity_view('_admin-header', compact('options'));
                         <label for="logtivity_enable_debug_mode">
                             Enable debug mode (recommended off by default)
                         </label>
-                        <?php if (has_filter('logtivity_enable_debug_mode')): ?>
+                        <?php if (has_filter('logtivity_enable_debug_mode')) : ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
                         <?php endif ?>
                     </th>
@@ -334,7 +341,7 @@ echo logtivity_view('_admin-header', compact('options'));
                 <tr class="user-user-login-wrap">
                     <th scope="row">
                         <label for="logtivity_disable_individual_logs">Disable Individual Logs</label>
-                        <?php if (has_filter('logtivity_disable_individual_logs')): ?>
+                        <?php if (has_filter('logtivity_disable_individual_logs')) : ?>
                             <div class="logtivity-constant">This option has been set in code.</div>
                         <?php endif ?>
                     </th>
@@ -350,32 +357,33 @@ echo logtivity_view('_admin-header', compact('options'));
                     </td>
 
                     <td>
-							<span class="description">
-								You can disable individual logged actions here by listing the action names, one per line.
-								<br>
+                            <span class="description">
+                                You can disable individual logged actions here by listing the action names,
+                                one per line.
                                 <br>
-								To specify the context field as well,
+                                <br>
+                                To specify the context field as well,
                                 separate the action and context keywords with an && symbol.
-								<br>
                                 <br>
-								<?php
+                                <br>
+                                <?php
                                 if (
                                         isset($options['logtivity_enable_white_label_mode']) == false
                                         || $options['logtivity_enable_white_label_mode'] != 1
-                                ):
+                                ) :
                                     ?>
                                     If you have multiple sites on Logtivity and would rather control disabled
                                     logs globally you can go to the
                                     <?php
                                     printf(
-                                            '<a href="%s" target="_blank" rel="nofollow">%s</a>',
-                                            esc_url(logtivity_get_app_url() . '/team-settings/activity-log-settings'),
-                                            esc_html__('Activity Log Settings page', 'logtivity')
+                                        '<a href="%s" target="_blank" rel="nofollow">%s</a>',
+                                        esc_url(logtivity_get_app_url() . '/team-settings/activity-log-settings'),
+                                        esc_html__('Activity Log Settings page', 'logtivity')
                                     );
                                     ?>
                                     in your Logtivity dashboard.
                                 <?php endif; ?>
-							</span>
+                            </span>
                     </td>
                 </tr>
                 </tbody>
@@ -393,14 +401,15 @@ echo logtivity_view('_admin-header', compact('options'));
     </div>
 </div>
 
-<?php if ($options['logtivity_enable_debug_mode']): ?>
-
+<?php if ($options['logtivity_enable_debug_mode']) : ?>
     <div class="postbox">
         <div class="inside">
 
             <h3>Debug Log</h3>
 
-            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display: inline-block; margin-bottom: 15px;">
+            <form method="post"
+                  action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+                  style="display: inline-block; margin-bottom: 15px;">
                 <input type="hidden" name="action" value="logtivity_clear_debug_log">
                 <?php wp_nonce_field('logtivity_clear_debug_log', 'logtivity_clear_debug_log'); ?>
                 <input id="logtivity-clear-debug-log"
@@ -414,13 +423,11 @@ echo logtivity_view('_admin-header', compact('options'));
                 <a id="logtivity-download-debug-log"
                    class="button"
                    style="margin-bottom: 15px;"
-                   href="<?php
-                   echo esc_url(wp_nonce_url(
+                   href="<?php echo esc_url(wp_nonce_url(
                        admin_url('admin-post.php?action=logtivity_download_debug_log'),
                        'logtivity_download_debug_log',
                        'logtivity_download_debug_log'
-                   ));
-                   ?>">
+                   )); ?>">
                     Download Debug Log
                 </a>
             <?php endif; ?>
@@ -439,13 +446,13 @@ echo logtivity_view('_admin-header', compact('options'));
                             Response:
                             <?php
                             echo $responseCode === null
-                                ? 'not captured (sent without waiting for a response)'
-                                : esc_html(sprintf(
-                                    '%s - %s (%sms)',
-                                    $responseCode,
-                                    $entry['response_message'] ?? 'No Message',
-                                    $entry['response_time_ms'] ?? 'NA'
-                                ));
+                                    ? 'not captured (sent without waiting for a response)'
+                                    : esc_html(sprintf(
+                                        '%s - %s (%sms)',
+                                        $responseCode,
+                                        $entry['response_message'] ?? 'No Message',
+                                        $entry['response_time_ms'] ?? 'NA'
+                                    ));
                             ?>
                         </h4>
                         <code style="display: block; padding: 20px; overflow-x: auto;">

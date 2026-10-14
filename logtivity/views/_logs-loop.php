@@ -46,12 +46,13 @@
 
     <?php if (count($logs)) : ?>
         <?php foreach ($logs as $key => $log) : ?>
-
             <tr>
                 <td><?php echo esc_html($log->action) ?></td>
                 <td><?php echo esc_html($log->context) ?></td>
                 <td class="break-long">
-                    <div style="margin-bottom: 5px;"><?php echo esc_html($log->action_username ?? $log->action_user_id) ?></div>
+                    <div style="margin-bottom: 5px;">
+                        <?php echo esc_html($log->action_username ?? $log->action_user_id) ?>
+                    </div>
                     <?php echo esc_html($log->ip_address) ?>
                 </td>
                 <td>
@@ -60,7 +61,13 @@
                     </small>
                 </td>
                 <td class="text-center">
-                    <button type="button" class="button js-logtivity-view-log" aria-haspopup="dialog" aria-controls="logtivity-log-modal" aria-label="<?php esc_attr_e('View log details', 'logtivity'); ?>">View</button>
+                    <button type="button"
+                            class="button js-logtivity-view-log"
+                            aria-haspopup="dialog"
+                            aria-controls="logtivity-log-modal"
+                            aria-label="<?php esc_attr_e('View log details', 'logtivity'); ?>">
+                        View
+                    </button>
                     <div style="display: none;" class="js-modal-content">
                         <?php
                         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
@@ -84,7 +91,9 @@
 </table>
 
 <?php if ($meta->current_page ?? null) : ?>
-    <nav class="nav-pages-buttons" data-current-page="<?php echo esc_attr($meta->current_page) ?>" aria-label="<?php esc_attr_e('Log pages', 'logtivity'); ?>">
+    <nav class="nav-pages-buttons"
+         data-current-page="<?php echo esc_attr($meta->current_page) ?>"
+         aria-label="<?php esc_attr_e('Log pages', 'logtivity'); ?>">
         <button type="button" <?php echo $meta->current_page == 1 ? 'disabled' : ''; ?>
                 class="js-logtivity-pagination button-primary nav-pages-prev"
                 aria-label="<?php esc_attr_e('Previous log page', 'logtivity'); ?>"
@@ -99,7 +108,12 @@
     </nav>
 <?php endif ?>
 
-<div id="logtivity-log-modal" class="logtivity-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="logtivity-log-modal-title">
+<div id="logtivity-log-modal"
+     class="logtivity-modal"
+     role="dialog"
+     aria-modal="true"
+     aria-hidden="true"
+     aria-labelledby="logtivity-log-modal-title">
     <div class="logtivity-modal-dialog" tabindex="-1">
         <div class="logtivity-modal-content">
             <!-- Populated with JS -->

@@ -166,7 +166,6 @@ class Logtivity_Api
                         'error'   => $response->get_error_message() ?: $response->get_error_code(),
                         'body'    => get_object_vars($response),
                     ]);
-
                 } else {
                     $responseCode    = wp_remote_retrieve_response_code($response);
                     $responseMessage = wp_remote_retrieve_response_message($response);
@@ -196,7 +195,6 @@ class Logtivity_Api
 
                         $body = json_decode($response['body'] ?? 'null', true);
                         $this->updateSettings($body['settings'] ?? []);
-
                     } else {
                         if ($this->getCurlError($parsedResponse['error']) != static::CURL_TIMEOUT) {
                             // Something other than a timeout went wrong with the request
@@ -206,13 +204,14 @@ class Logtivity_Api
                         $this->updateLastCheckin();
                     }
 
-                    $this->options->update([
-                        'logtivity_api_key_check'   => $newStatus,
-                        'logtivity_latest_response' => array_merge(
-                            ['date' => date('Y-m-d H:i:s')],
-                            $parsedResponse
-                        ),
-                    ],
+                    $this->options->update(
+                        [
+                            'logtivity_api_key_check'   => $newStatus,
+                            'logtivity_latest_response' => array_merge(
+                                ['date' => gmdate('Y-m-d H:i:s')],
+                                $parsedResponse
+                            ),
+                        ],
                         false
                     );
 
@@ -356,7 +355,7 @@ class Logtivity_Api
      */
     protected function updateLastCheckin(): void
     {
-        update_option('logtivity_last_settings_check_in_at', ['date' => date('Y-m-d H:i:s')]);
+        update_option('logtivity_last_settings_check_in_at', ['date' => gmdate('Y-m-d H:i:s')]);
     }
 
     /**
@@ -392,13 +391,11 @@ class Logtivity_Api
 
         if ($code >= 400 && isset($latestResponse['body']['message'])) {
             $message = $latestResponse['body']['message'];
-
         } elseif (isset($latestResponse['body']['errors'])) {
             $message = array_shift($latestResponse['body']['errors']);
             while (is_array($message)) {
                 $message = array_shift($message);
             }
-
         } elseif (isset($latestResponse['body']['error'])) {
             $message = $latestResponse['body']['error'];
         } else {

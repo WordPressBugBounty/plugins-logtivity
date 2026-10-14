@@ -48,4 +48,4 @@ class Logtivity_Download_Monitor extends Logtivity_Abstract_Logger
     }
 }
 
-$Logtivity_Download_Monitor = new Logtivity_Download_Monitor;
+$Logtivity_Download_Monitor = new Logtivity_Download_Monitor();

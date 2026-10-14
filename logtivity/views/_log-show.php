@@ -39,24 +39,24 @@
             <th scope="row">Action</th>
             <td><?php echo esc_html($log->action) ?></td>
         </tr>
-        <?php if ($log->context): ?>
+        <?php if ($log->context) : ?>
             <tr>
                 <th scope="row">Context</th>
                 <td><?php echo esc_html($log->context) ?></td>
             </tr>
         <?php endif ?>
-        <?php if ($log->action_user_id): ?>
+        <?php if ($log->action_user_id) : ?>
             <tr>
                 <th scope="row">User ID</th>
                 <td><?php echo esc_html($log->action_user_id) ?></td>
             </tr>
         <?php endif ?>
-        <?php if ($log->action_username): ?>
+        <?php if ($log->action_username) : ?>
             <tr>
                 <th scope="row">Username</th>
                 <td><?php echo esc_html($log->action_username) ?></td>
             </tr>
-        <?php
+            <?php
         endif;
 
         if ($log->action_user_meta) :
@@ -68,8 +68,11 @@
                         <?php
                         if (is_array($value) || is_object($value)) :
                             ?>
-                            <pre class="mb-0"><?php echo esc_html(print_r($value, true)); ?></pre>
-                        <?php
+                            <pre class="mb-0"><?php
+                                // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- used to render arbitrary meta values in the admin log viewer, not debug output.
+                                echo esc_html(print_r($value, true));
+                            ?></pre>
+                            <?php
                         elseif (is_string($value) && substr($value, 0, 4) === 'http') :
                             ?>
                             <a target="_blank"
@@ -77,14 +80,14 @@
                                href="<?php echo esc_url($value) ?>">
                                 <?php echo esc_html($value) ?>
                             </a>
-                        <?php
+                            <?php
                         else :
                             echo esc_html((string)$value);
                         endif;
                         ?>
                     </td>
                 </tr>
-            <?php
+                <?php
             endforeach;
         endif;
 
@@ -131,8 +134,11 @@ if ($meta) :
 
                     if (is_array($value) || is_object($value)) :
                         ?>
-                        <pre><?php echo esc_html(print_r($value, true)); ?></pre>
-                    <?php
+                        <pre><?php
+                            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r -- used to render arbitrary meta values in the admin log viewer, not debug output.
+                            echo esc_html(print_r($value, true));
+                        ?></pre>
+                        <?php
                     elseif (is_string($value) && preg_match('#^https?://#', ltrim($value))) :
                         ?>
                         <a target="_blank"
@@ -141,7 +147,7 @@ if ($meta) :
                             Visit Link
                             <i class="ml-1 small fas fa-external-link-alt"></i>
                         </a>
-                    <?php
+                        <?php
                     else :
                         echo esc_html((string)$value);
                     endif;
@@ -152,5 +158,5 @@ if ($meta) :
         <?php endforeach; ?>
         </tbody>
     </table>
-<?php
+    <?php
 endif;

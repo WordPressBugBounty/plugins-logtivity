@@ -21,6 +21,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Logtivity.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 ?>
 <div style="<?php echo esc_attr(($display ?? false) ? 'display:block;' : '') ?>"
      class="updated notice logtivity-notice is-dismissible">
@@ -42,7 +43,10 @@
                     <?php
                     printf(
                         wp_kses(
-                            __('%1$sCreate a Logtivity account%2$s or %3$slog in to your Logtivity account%4$s.', 'logtivity'),
+                            __(
+                                '%1$sCreate a Logtivity account%2$s or %3$slog in to your Logtivity account%4$s.',
+                                'logtivity'
+                            ),
                             [
                                 'a' => [
                                     'href'   => true,
@@ -51,9 +55,15 @@
                                 ],
                             ]
                         ),
-                        '<a target="_blank" rel="noopener noreferrer" href="' . esc_url(logtivity_get_app_url() . '/register') . '">',
+                        sprintf(
+                            '<a target="_blank" rel="noopener noreferrer" href="%s/register">',
+                            esc_url(logtivity_get_app_url())
+                        ),
                         '</a>',
-                        '<a target="_blank" rel="noopener noreferrer" href="' . esc_url(logtivity_get_app_url() . '/login') . '">',
+                        sprintf(
+                            '<a target="_blank" rel="noopener noreferrer" href="%s/login">',
+                            esc_url(logtivity_get_app_url())
+                        ),
                         '</a>'
                     );
                     ?>
@@ -71,7 +81,10 @@
                                 ],
                             ]
                         ),
-                        '<a target="_blank" rel="noopener noreferrer" href="' . esc_url('https://logtivity.io/docs/connect-your-site-to-logtivity/') . '">',
+                        sprintf(
+                            '<a target="_blank" rel="noopener noreferrer" href="%s">',
+                            esc_url('https://logtivity.io/docs/connect-your-site-to-logtivity/')
+                        ),
                         '</a>'
                     );
                     ?>
@@ -89,7 +102,10 @@
                                 ],
                             ]
                         ),
-                        '<a target="_blank" rel="noopener noreferrer" href="' . esc_url(admin_url('admin.php?page=logtivity-settings')) . '">',
+                        sprintf(
+                            '<a target="_blank" rel="noopener noreferrer" href="%s">',
+                            esc_url(admin_url('admin.php?page=logtivity-settings'))
+                        ),
                         '</a>'
                     );
                     ?>

@@ -36,7 +36,6 @@ abstract class Logtivity_Register
         if (static::$response instanceof WP_Error) {
             $message = static::$response->get_error_message();
             $status  = 'error';
-
         } elseif (static::$response instanceof Logtivity_Response) {
             $message = static::$response->message;
             $status  = 'success';

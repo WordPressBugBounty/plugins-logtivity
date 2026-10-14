@@ -281,11 +281,9 @@ class Logtivity_Admin
                 } else {
                     wp_send_json_success($response);
                 }
-
             } else {
                 wp_send_json_error('Invalid Request');
             }
-
         } catch (Throwable $error) {
             wp_send_json_error($error->getMessage(), $error->getCode());
         }

@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.3.10
+ * Version:           3.3.11
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       logtivity
@@ -39,7 +39,7 @@
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 
 if (!defined('LOGTIVITY_VERSION')) {
-    define('LOGTIVITY_VERSION', '3.3.10');
+    define('LOGTIVITY_VERSION', '3.3.11');
 }
 
 class Logtivity
@@ -143,7 +143,6 @@ class Logtivity
                 $this->loadIntegrations();
             }
         });
-
     }
 
     /**
@@ -169,7 +168,6 @@ class Logtivity
                 if ($file->getExtension() == $extension) {
                     $list[] = $file->getRealPath();
                 }
-
             } elseif ($recurse) {
                 $list = array_merge($list, $this->getFiles($file->getRealPath(), $recurse, $extension));
             }
@@ -295,10 +293,10 @@ class Logtivity
                 'logtivity_register_site_error',
                 __('You have already entered an API Key for this site.', 'logtivity')
             );
-
         } elseif ($teamApi) {
             $request = [
                 'method'   => 'POST',
+                // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- one-off blocking call triggered directly by an admin registering their site, not a per-page-load request.
                 'timeout'  => 6,
                 'blocking' => true,
                 'body'     => [
@@ -321,11 +319,11 @@ class Logtivity
 
                     if ($isNew) {
                         $response->message = sprintf(
-                            'This site has been created on <a href="%s" target="_blank">Logtivity</a> for team \'%s\'. Logging is now enabled.',
+                            'This site has been created on <a href="%s" target="_blank">Logtivity</a> for team \'%s\'.'
+                            . ' Logging is now enabled.',
                             logtivity_get_app_url(),
                             $teamName
                         );
-
                     } else {
                         if ($created) {
                             $createdTimestamp = strtotime($created);
@@ -336,7 +334,8 @@ class Logtivity
                             );
                         }
                         $response->message = sprintf(
-                            'This site was found on <a href="%s" target="_blank">Logtivity</a>. %sfor the team \'%s\'. Logging is now enabled.',
+                            'This site was found on <a href="%s" target="_blank">Logtivity</a>. %sfor the team \'%s\'.'
+                            . ' Logging is now enabled.',
                             logtivity_get_app_url(),
                             $creationText ?? '',
                             $teamName
@@ -344,7 +343,6 @@ class Logtivity
                     }
                 }
             }
-
         } else {
             $response = new WP_Error('logtivity_missing_data', 'Team API Key is required.');
         }

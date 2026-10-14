@@ -129,5 +129,4 @@ class Logtivity_Check_For_Disabled_Individual_Logs
 
         return false;
     }
-
 }

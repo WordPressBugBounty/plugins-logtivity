@@ -64,7 +64,7 @@ class Logtivity_Log_Index_Controller
                     );
 
                 if ($response) {
-                    $response = json_decode(json_encode($response));
+                    $response = json_decode(wp_json_encode($response));
 
                     $this->renderView([
                         'message'     => $response->error,
@@ -75,7 +75,6 @@ class Logtivity_Log_Index_Controller
                 } else {
                     $this->renderView($api->getConnectionMessage());
                 }
-
             } else {
                 $this->welcomeResponse();
             }
@@ -91,9 +90,11 @@ class Logtivity_Log_Index_Controller
      */
     protected function getInput(string $field): ?string
     {
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended -- nonce verified in search() via check_ajax_referer() before getInput() is called.
         return isset($_GET[$field])
             ? sanitize_text_field(wp_unslash($_GET[$field]))
             : null;
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
     }
 
     /**

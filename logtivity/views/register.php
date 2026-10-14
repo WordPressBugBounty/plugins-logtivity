@@ -48,7 +48,6 @@ echo logtivity_view('_admin-header', compact('options'));
             </div>
 
         <?php else : ?>
-
             <div class="logtivity-notice logtivity-notice-info" style="width: fit-content; margin-bottom: 20px;">
                 <div>
                     If you already have an account with Logtivity, you can register this site using your team API

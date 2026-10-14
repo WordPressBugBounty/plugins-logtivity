@@ -65,12 +65,14 @@ trait Logtivity_User_Logger_Trait
     protected function maybeGetUsersIp(): ?string
     {
         if ($this->options->shouldStoreIp()) {
+            // phpcs:disable WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders, WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__REMOTE_ADDR__ -- value is validated as a real IP via FILTER_VALIDATE_IP below before use; this logger runs outside page-cache rendering.
             $ipAddress = filter_var(
                 (isset($_SERVER['HTTP_CLIENT_IP']) ? wp_unslash($_SERVER['HTTP_CLIENT_IP']) : '')
                     ?: (isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR']) : '')
                     ?: (isset($_SERVER['REMOTE_ADDR']) ? wp_unslash($_SERVER['REMOTE_ADDR']) : ''),
                 FILTER_VALIDATE_IP
             );
+            // phpcs:enable WordPressVIPMinimum.Variables.ServerVariables.UserControlledHeaders, WordPressVIPMinimum.Variables.RestrictedVariables.cache_constraints___SERVER__REMOTE_ADDR__
 
             return $ipAddress ?: null;
         }

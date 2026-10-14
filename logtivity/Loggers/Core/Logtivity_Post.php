@@ -137,10 +137,9 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
 
         // Media/Attachment changes
         // @TODO: skip media data changes for now. Maybe always?
-        add_filter('wp_handle_upload', [$this, 'wp_handle_upload'], 10, 2);
         //add_action('attachment_updated', [$this, 'attachment_updated'], 10, 3);
+        add_filter('wp_handle_upload', [$this, 'wp_handle_upload'], 10, 2);
         add_action('deleted_post', [$this, 'deleted_post'], 10, 2);
-
     }
 
     public function __call(string $name, array $arguments)
