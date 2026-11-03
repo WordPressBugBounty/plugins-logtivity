@@ -32,7 +32,6 @@
 
 $api              = new Logtivity_Api();
 $apiKey           = $api->getApiKey();
-$latestResponse   = $api->getLatestResponse();
 
 // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- logtivity_view() renders trusted plugin templates.
 echo logtivity_view('_admin-header', compact('options'));

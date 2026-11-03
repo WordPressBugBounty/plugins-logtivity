@@ -91,8 +91,10 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
         'logtivity_hide_plugin_from_ui',
         'logtivity_last_settings_check_in_at',
         'logtivity_latest_response',
+        'logtivity_settings',
         'logtivity_should',
         'logtivity_site_api_key',
+        'logtivity_state',
         'logtivity_url_hash',
         'logtivity_version',
         'queue',
@@ -111,7 +113,7 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
         add_action('init', [$this, 'maybeSettingsUpdated'], 10, 1);
         add_action('permalink_structure_changed', [$this, 'permalinksUpdated'], 10, 2);
 
-        if (get_option('logtivity_enable_options_table_logging')) {
+        if ((new Logtivity_Options())->getOption('logtivity_enable_options_table_logging')) {
             add_action('update_option', [$this, 'optionUpdated'], 10, 3);
         }
 
@@ -242,7 +244,7 @@ class Logtivity_Core extends Logtivity_Abstract_Logger
             && is_admin()
             && $oldValue !== $newValue
             && $this->ignoreOption($option) == false
-            && get_option('logtivity_enable_options_table_logging')
+            && (new Logtivity_Options())->getOption('logtivity_enable_options_table_logging')
         ) {
             Logtivity::log()
                 ->setAction('Option Updated')

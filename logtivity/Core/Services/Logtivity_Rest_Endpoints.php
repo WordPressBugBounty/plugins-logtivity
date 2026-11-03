@@ -50,10 +50,6 @@ class Logtivity_Rest_Endpoints
 
                             $response = $options->getOptions();
 
-                            $lastCheckinOption = 'logtivity_last_settings_check_in_at';
-
-                            $response[$lastCheckinOption]        = get_option($lastCheckinOption);
-                            $response[$lastCheckinOption]        = $response[$lastCheckinOption]['date'] ?? null;
                             $response['logtivity_checkin_delay'] = $options->checkinDelay;
                             $response['version']                 = $this->getLogtivityVersion();
 

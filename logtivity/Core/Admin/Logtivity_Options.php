@@ -28,6 +28,16 @@
 class Logtivity_Options
 {
     /**
+     * Options table row holding all user/server configurable settings
+     */
+    public const SETTINGS_OPTION = 'logtivity_settings';
+
+    /**
+     * Options table row holding runtime connection state
+     */
+    public const STATE_OPTION = 'logtivity_state';
+
+    /**
      * Checkin for settings updates in designated seconds
      *
      * @var int
@@ -35,12 +45,11 @@ class Logtivity_Options
     public int $checkinDelay = 10 * MINUTE_IN_SECONDS;
 
     /**
-     * The option keys that we can save to the options table
+     * The setting keys stored in the settings row
      *
      * @var array
      */
     protected array $settings = [
-        'logtivity_api_key_check'                => ['rule' => 'is_string', 'default' => null],
         'logtivity_app_verify_url'               => ['rule' => 'is_bool', 'default' => 1],
         'logtivity_custom_plugin_name'           => ['rule' => 'is_string', 'default' => null],
         'logtivity_disable_default_logging'      => ['rule' => 'is_bool', 'default' => null],
@@ -51,17 +60,29 @@ class Logtivity_Options
         'logtivity_enable_white_label_mode'      => ['rule' => 'is_bool', 'default' => null],
         'logtivity_global_disabled_logs'         => ['rule' => 'is_string', 'default' => null],
         'logtivity_hide_plugin_from_ui'          => ['rule' => 'is_bool', 'default' => null],
-        'logtivity_latest_response'              => ['rule' => 'is_array', 'default' => null],
         'logtivity_should_log_profile_link'      => ['rule' => 'is_bool', 'default' => 1],
         'logtivity_should_log_username'          => ['rule' => 'is_bool', 'default' => 1],
         'logtivity_should_store_ip'              => ['rule' => 'is_bool', 'default' => 1],
         'logtivity_should_store_user_id'         => ['rule' => 'is_bool', 'default' => 1],
         'logtivity_site_api_key'                 => ['rule' => 'is_string', 'default' => null],
-        'logtivity_url_hash'                     => ['rule' => 'is_string', 'default' => null],
     ];
 
     /**
-     * Get the admin settings or the plugin
+     * The state keys stored in the state row. These are only written internally
+     * and are kept apart from the settings so that frequent writes made while
+     * talking to the API do not rewrite the settings row.
+     *
+     * @var array
+     */
+    protected array $state = [
+        'logtivity_api_key_check'             => ['rule' => 'is_string', 'default' => null],
+        'logtivity_last_error'                => ['rule' => 'is_array', 'default' => null],
+        'logtivity_last_settings_check_in_at' => ['rule' => 'is_string', 'default' => null],
+        'logtivity_url_hash'                  => ['rule' => 'is_string', 'default' => null],
+    ];
+
+    /**
+     * Get the admin settings and state of the plugin
      *
      * @return array
      */
@@ -69,15 +90,15 @@ class Logtivity_Options
     {
         $options = [];
 
-        foreach ($this->settings as $setting => $rules) {
-            $options[$setting] = $this->getOption($setting);
+        foreach (array_keys(array_merge($this->settings, $this->state)) as $key) {
+            $options[$key] = $this->getOption($key);
         }
 
         return $options;
     }
 
     /**
-     * Get an option from the database
+     * Get a setting or state value from the database
      *
      * @param string $key
      *
@@ -89,12 +110,71 @@ class Logtivity_Options
             return apply_filters($key, false);
         }
 
-        $setting = $this->settings[$key] ?? null;
-        if ($setting) {
-            $value = get_option($key, $setting['default'] ?? null);
+        if (isset($this->settings[$key])) {
+            $definition = $this->settings[$key];
+            $values     = $this->getStoredValues(static::SETTINGS_OPTION);
+        } elseif (isset($this->state[$key])) {
+            $definition = $this->state[$key];
+            $values     = $this->getStoredValues(static::STATE_OPTION);
+        } else {
+            return null;
         }
 
-        return $value ?? null;
+        return array_key_exists($key, $values) ? $values[$key] : ($definition['default'] ?? null);
+    }
+
+    /**
+     * @param string $option
+     *
+     * @return array
+     */
+    protected function getStoredValues(string $option): array
+    {
+        $values = get_option($option);
+
+        if ($values === false) {
+            $values = $this->migrateLegacyOptions($option);
+        }
+
+        return is_array($values) ? $values : [];
+    }
+
+    /**
+     * Settings and state were previously stored in individual option rows.
+     * Collect them into the consolidated row the first time it is requested.
+     * The legacy rows are left in place so a rollback to an earlier version
+     * still finds them.
+     *
+     * @param string $option
+     *
+     * @return array
+     */
+    protected function migrateLegacyOptions(string $option): array
+    {
+        $definitions = $option == static::SETTINGS_OPTION ? $this->settings : $this->state;
+
+        $values = [];
+        foreach (array_keys($definitions) as $key) {
+            $value = get_option($key);
+            if ($value !== false) {
+                $values[$key] = $value;
+            }
+        }
+
+        if ($option == static::STATE_OPTION) {
+            // Legacy check-in time was stored as ['date' => ...]
+            $lastCheckin = $values['logtivity_last_settings_check_in_at'] ?? null;
+            if (is_array($lastCheckin)) {
+                $values['logtivity_last_settings_check_in_at'] = (string)($lastCheckin['date'] ?? '');
+            }
+
+            // Obsolete since the debug log file was introduced
+            delete_option('logtivity_latest_response');
+        }
+
+        update_option($option, $values);
+
+        return $values;
     }
 
     /**
@@ -163,8 +243,7 @@ class Logtivity_Options
      */
     public function shouldCheckInWithApi(): bool
     {
-        $lastCheckin = get_option('logtivity_last_settings_check_in_at');
-        $lastCheckin = $lastCheckin['date'] ?? null;
+        $lastCheckin = $this->getOption('logtivity_last_settings_check_in_at');
 
         if ($lastCheckin) {
             return time() - strtotime($lastCheckin) > $this->checkinDelay;
@@ -234,13 +313,17 @@ class Logtivity_Options
         }
 
         $settings = array_intersect_key($data, $this->settings);
-        foreach ($settings as $key => $value) {
-            $value = $this->sanitizeSetting($key, $value);
 
-            if ($this->validateSetting($key, $value)) {
-                update_option($key, $value);
+        $changes = [];
+        foreach ($settings as $key => $value) {
+            $value = $this->sanitizeSetting($this->settings[$key], $value);
+
+            if ($this->validateSetting($this->settings[$key], $value)) {
+                $changes[$key] = $value;
             }
         }
+
+        $this->saveChanges(static::SETTINGS_OPTION, $changes);
 
         if ($checkApiKey) {
             $this->checkApiKey($settings['logtivity_site_api_key'] ?? null);
@@ -248,17 +331,98 @@ class Logtivity_Options
     }
 
     /**
+     * Update the runtime state for this plugin. A null value removes the key.
+     *
+     * @param array $data
+     *
+     * @return void
+     */
+    public function updateState(array $data): void
+    {
+        $changes = [];
+        foreach (array_intersect_key($data, $this->state) as $key => $value) {
+            if ($value === null) {
+                $changes[$key] = null;
+                continue;
+            }
+
+            $value = $this->sanitizeSetting($this->state[$key], $value);
+
+            if ($this->validateSetting($this->state[$key], $value)) {
+                $changes[$key] = $value;
+            }
+        }
+
+        $this->saveChanges(static::STATE_OPTION, $changes);
+    }
+
+    /**
+     * Save only the values that differ from what this request has already read,
+     * merged into a fresh copy of the row. Options are cached for the whole
+     * request, so saving the cached row could otherwise overwrite changes made
+     * by another request in the meantime, e.g. an admin saving settings while
+     * a blocking settings check-in is waiting on the API.
+     *
+     * @param string $option
+     * @param array  $changes A null value removes the key
+     *
+     * @return void
+     */
+    protected function saveChanges(string $option, array $changes): void
+    {
+        $current = $this->getStoredValues($option);
+
+        foreach ($changes as $key => $value) {
+            $stored = array_key_exists($key, $current) ? $current[$key] : null;
+            if ($stored === $value) {
+                unset($changes[$key]);
+            }
+        }
+
+        if ($changes) {
+            $values = $this->getFreshValues($option) ?? $current;
+            foreach ($changes as $key => $value) {
+                if ($value === null) {
+                    unset($values[$key]);
+                } else {
+                    $values[$key] = $value;
+                }
+            }
+
+            update_option($option, $values);
+        }
+    }
+
+    /**
+     * Read the row directly from the database, bypassing the request's option cache
+     *
+     * @param string $option
+     *
+     * @return ?array
+     */
+    protected function getFreshValues(string $option): ?array
+    {
+        global $wpdb;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- the cached value is exactly what must be bypassed here.
+        $values = $wpdb->get_var(
+            $wpdb->prepare("SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1", $option)
+        );
+        $values = maybe_unserialize($values);
+
+        return is_array($values) ? $values : null;
+    }
+
+    /**
      * Sanitize setting values before saving.
      *
-     * @param string $key
-     * @param mixed  $value
+     * @param array $setting
+     * @param mixed $value
      *
      * @return mixed
      */
-    protected function sanitizeSetting(string $key, $value)
+    protected function sanitizeSetting(array $setting, $value)
     {
-        $setting = $this->settings[$key] ?? null;
-
         if (($setting['rule'] ?? null) === 'is_string' && is_scalar($value)) {
             return sanitize_textarea_field((string)$value);
         }
@@ -269,31 +433,25 @@ class Logtivity_Options
     /**
      * Validate that the passed parameters are in the correct format
      *
-     * @param string $key
-     * @param mixed  $value
+     * @param array $setting
+     * @param mixed $value
      *
      * @return bool
      */
-    protected function validateSetting(string $key, $value): bool
+    protected function validateSetting(array $setting, $value): bool
     {
-        $setting = $this->settings[$key] ?? null;
+        switch ($setting['rule'] ?? null) {
+            case 'is_bool':
+                return is_bool($value) || in_array($value, [0, 1, '0', '1', ''], true);
 
-        if ($setting) {
-            switch ($setting['rule'] ?? null) {
-                case 'is_bool':
-                    return is_bool($value) || in_array($value, [0, 1, '0', '1', ''], true);
+            case 'is_array':
+                return is_array($value);
 
-                case 'is_array':
-                    return is_array($value);
-
-                case 'is_string':
-                    return is_string($value);
-            }
-
-            return false;
+            case 'is_string':
+                return is_string($value);
         }
 
-        return true;
+        return false;
     }
 
     /**

@@ -20,8 +20,10 @@ abstract class Logtivity_Register
 
     public static function register()
     {
-        $apiKey = get_option('logtivity_site_api_key');
-        if (empty($apiKey) && is_callable([Logtivity::class, 'registerSite'])) {
+        if (
+            is_callable([Logtivity::class, 'registerSite'])
+            && (new Logtivity_Options())->getApiKey() == false
+        ) {
             static::$response = Logtivity::registerSite(static::$teamApi);
         }
 

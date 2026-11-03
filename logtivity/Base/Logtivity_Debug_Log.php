@@ -25,8 +25,8 @@
 /**
  * Writes an append-only, size-capped history of Logtivity API calls (request and
  * response data) to a protected file in the uploads directory when debug mode is
- * enabled. This is separate from, and does not affect, the `logtivity_latest_response`
- * option used to track connection status.
+ * enabled. This is separate from, and does not affect, the connection status kept
+ * in the `logtivity_state` option.
  */
 class Logtivity_Debug_Log
 {

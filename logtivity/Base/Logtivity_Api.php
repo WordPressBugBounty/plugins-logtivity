@@ -27,16 +27,6 @@ class Logtivity_Api
     public const CURL_TIMEOUT = 28;
 
     /**
-     * @var array
-     */
-    protected static $responseData = [
-        'code'    => null,
-        'message' => null,
-        'error'   => null,
-        'body'    => null,
-    ];
-
-    /**
      * Option class to access the plugin settings
      *
      * @var Logtivity_Options
@@ -115,7 +105,7 @@ class Logtivity_Api
         $body['occurred_at'] = time();
 
         if ($this->options->urlHash() == false) {
-            $this->options->update(['logtivity_url_hash' => md5(home_url())], false);
+            $this->options->updateState(['logtivity_url_hash' => md5(home_url())]);
         }
 
         if ($this->ready()) {
@@ -124,99 +114,36 @@ class Logtivity_Api
             }
 
             $waitForResponse = $this->waitForResponse || $this->options->shouldLogLatestResponse();
-            $requestBody     = $body;
 
-            $request = [
-                'method'      => $method,
-                'timeout'     => ($waitForResponse ? 6 : 0.01),
-                'blocking'    => $waitForResponse,
-                'redirection' => 5,
-                'httpversion' => '1.0',
-                'headers'     => [
-                    'Authorization' => 'Bearer ' . $this->getApiKey(),
-                ],
-                'body'        => $body,
-                'cookies'     => [],
-            ];
-
-            /**
-             * This request must not be cached. It writes a log entry to the API rather
-             * than reading a cacheable resource, so a cached response would silently
-             * drop logs. The default path is also non-blocking with a 0.01s timeout,
-             * so it does not hold up the page load.
-             *
-             * Settings check-ins are already rate limited by
-             * Logtivity_Options::shouldCheckInWithApi(), which gates on the
-             * logtivity_last_settings_check_in_at option.
-             *
-             * @TODO: Switch to Logtivity_Response class to get standardized responses
-             */
-            $requestStartedAt = microtime(true);
-            $response         = wp_remote_request($this->getEndpoint($url), $request);
-            $responseTimeMs   = (int)round((microtime(true) - $requestStartedAt) * 1000);
+            $response = new Logtivity_Response($url, $body, $method, $waitForResponse, $this->getApiKey());
 
             $responseData = null;
 
-            if ($waitForResponse && $this->notUpdatingWidgetInCustomizer()) {
+            if ($waitForResponse && $response->code && $this->notUpdatingWidgetInCustomizer()) {
                 // We waited and received a response
-                if ($response instanceof WP_Error) {
-                    $parsedResponse = array_merge(static::$responseData, [
-                        'code'    => 500,
-                        'message' => $response->get_error_code(),
-                        'error'   => $response->get_error_message() ?: $response->get_error_code(),
-                        'body'    => get_object_vars($response),
-                    ]);
-                } else {
-                    $responseCode    = wp_remote_retrieve_response_code($response);
-                    $responseMessage = wp_remote_retrieve_response_message($response);
-                    $responseBody    = json_decode(wp_remote_retrieve_body($response), true);
-
-                    if ($responseCode < 400) {
-                        $responseError = $responseBody['error'] ?? null;
-                    } else {
-                        $responseError   = $responseMessage;
-                        $responseMessage = (($responseBody['message'] ?? $responseMessage) ?: 'Unknown error');
-                    }
-                    $parsedResponse = [
-                        'code'    => $responseCode,
-                        'message' => $responseMessage,
-                        'error'   => $responseError,
-                        'body'    => $responseBody,
-                    ];
-                }
-
                 $newStatus = 'success';
-                if ($parsedResponse['code']) {
-                    if ($parsedResponse['code'] < 400) {
-                        // Successful request, check if api is telling us to pause
-                        if ($parsedResponse['error']) {
-                            $newStatus = 'paused';
-                        }
-
-                        $body = json_decode($response['body'] ?? 'null', true);
-                        $this->updateSettings($body['settings'] ?? []);
-                    } else {
-                        if ($this->getCurlError($parsedResponse['error']) != static::CURL_TIMEOUT) {
-                            // Something other than a timeout went wrong with the request
-                            $newStatus = 'fail';
-                        }
-
-                        $this->updateLastCheckin();
+                if ($response->code < 400) {
+                    // Successful request, check if api is telling us to pause
+                    if ($response->error) {
+                        $newStatus = 'paused';
                     }
 
-                    $this->options->update(
-                        [
-                            'logtivity_api_key_check'   => $newStatus,
-                            'logtivity_latest_response' => array_merge(
-                                ['date' => gmdate('Y-m-d H:i:s')],
-                                $parsedResponse
-                            ),
-                        ],
-                        false
-                    );
+                    $this->updateSettings($response->body['settings'] ?? []);
+                } else {
+                    if ($this->getCurlError($response->error) != static::CURL_TIMEOUT) {
+                        // Something other than a timeout went wrong with the request
+                        $newStatus = 'fail';
+                    }
 
-                    $responseData = $parsedResponse;
+                    $this->updateLastCheckin();
                 }
+
+                $responseData = $response->toArray();
+
+                $this->options->updateState([
+                    'logtivity_api_key_check' => $newStatus,
+                    'logtivity_last_error'    => $newStatus == 'success' ? null : $this->parseError($responseData),
+                ]);
             }
 
             if ($this->getOption('logtivity_enable_debug_mode')) {
@@ -230,12 +157,12 @@ class Logtivity_Api
                     'endpoint'         => $url,
                     'url'              => $this->getEndpoint($url),
                     'method'           => $method,
-                    'request_body'     => $requestBody,
+                    'request_body'     => $body,
                     'response_code'    => $responseData['code'] ?? null,
                     'response_message' => $responseData['message'] ?? null,
                     'response_error'   => $responseData['error'] ?? null,
                     'response_body'    => $responseData ? $responseBody : null,
-                    'response_time_ms' => $responseData ? $responseTimeMs : null,
+                    'response_time_ms' => $responseData ? $response->responseTimeMs : null,
                 ]);
             }
 
@@ -355,7 +282,7 @@ class Logtivity_Api
      */
     protected function updateLastCheckin(): void
     {
-        update_option('logtivity_last_settings_check_in_at', ['date' => gmdate('Y-m-d H:i:s')]);
+        $this->options->updateState(['logtivity_last_settings_check_in_at' => gmdate('Y-m-d H:i:s')]);
     }
 
     /**
@@ -365,19 +292,39 @@ class Logtivity_Api
      */
     protected function getCurlError(?string $message): ?int
     {
-        preg_match('/curl\s+error\s+(\d+)/i', $message, $matches);
+        preg_match('/curl\s+error\s+(\d+)/i', (string)$message, $matches);
 
         return $matches[1] ?? null;
     }
 
     /**
-     * @return ?array
+     * Reduce a failed API response to the code and message needed to report it
+     *
+     * @param array $response
+     *
+     * @return array
      */
-    public function getLatestResponse(): ?array
+    protected function parseError(array $response): array
     {
-        $response = $this->getOption('logtivity_latest_response');
+        $code = $response['code'] ?? null;
 
-        return $response ?: null;
+        if ($code >= 400 && isset($response['body']['message'])) {
+            $message = $response['body']['message'];
+        } elseif (isset($response['body']['errors'])) {
+            $message = array_shift($response['body']['errors']);
+            while (is_array($message)) {
+                $message = array_shift($message);
+            }
+        } elseif (isset($response['body']['error'])) {
+            $message = $response['body']['error'];
+        } else {
+            $message = $response['error'] ?? $response['message'] ?? 'Unknown error';
+        }
+
+        return [
+            'code'    => (int)$code,
+            'message' => is_scalar($message) ? sanitize_text_field((string)$message) : 'Unknown error',
+        ];
     }
 
     /**
@@ -385,28 +332,16 @@ class Logtivity_Api
      */
     public function getLastError(): ?Exception
     {
-        $latestResponse = $this->getLatestResponse();
+        $lastError = $this->getOption('logtivity_last_error');
 
-        $code = $latestResponse['code'] ?? null;
-
-        if ($code >= 400 && isset($latestResponse['body']['message'])) {
-            $message = $latestResponse['body']['message'];
-        } elseif (isset($latestResponse['body']['errors'])) {
-            $message = array_shift($latestResponse['body']['errors']);
-            while (is_array($message)) {
-                $message = array_shift($message);
-            }
-        } elseif (isset($latestResponse['body']['error'])) {
-            $message = $latestResponse['body']['error'];
-        } else {
-            $message = $latestResponse['error'] ?? $latestResponse['message'] ?? 'Unknown error';
-        }
+        $code    = (int)($lastError['code'] ?? 0);
+        $message = $lastError['message'] ?? null;
 
         if (($code == false || $message == false) && $this->getApiKey()) {
             $message = 'Not connected. Please check API Key';
         }
 
-        return new Exception($message, $code);
+        return new Exception((string)$message, $code);
     }
 
     /**

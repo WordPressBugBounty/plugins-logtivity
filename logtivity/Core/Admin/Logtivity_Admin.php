@@ -226,12 +226,7 @@ class Logtivity_Admin
             exit();
         }
 
-        $this->options->update(
-            [
-                'logtivity_url_hash' => md5(home_url()),
-            ],
-            false
-        );
+        $this->options->updateState(['logtivity_url_hash' => md5(home_url())]);
 
         delete_transient('dismissed-logtivity-site-url-has-changed-notice');
 

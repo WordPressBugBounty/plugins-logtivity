@@ -32,7 +32,7 @@ class Logtivity_Clear_Debug_Log_Controller
     {
         add_action('admin_post_logtivity_clear_debug_log', [$this, 'clear']);
         add_action('admin_post_logtivity_download_debug_log', [$this, 'download']);
-        add_action('update_option_logtivity_enable_debug_mode', [$this, 'maybeClearOnDisable'], 10, 2);
+        add_action('update_option_' . Logtivity_Options::SETTINGS_OPTION, [$this, 'maybeClearOnDisable'], 10, 2);
     }
 
     /**
@@ -121,7 +121,9 @@ class Logtivity_Clear_Debug_Log_Controller
      */
     public function maybeClearOnDisable($oldValue, $newValue): void
     {
-        if ($newValue) {
+        $key = 'logtivity_enable_debug_mode';
+
+        if (empty($oldValue[$key]) || empty($newValue[$key]) == false) {
             return;
         }
 

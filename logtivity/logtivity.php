@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.3.11
+ * Version:           3.3.12
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       logtivity
@@ -39,7 +39,7 @@
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 
 if (!defined('LOGTIVITY_VERSION')) {
-    define('LOGTIVITY_VERSION', '3.3.11');
+    define('LOGTIVITY_VERSION', '3.3.12');
 }
 
 class Logtivity
@@ -191,7 +191,7 @@ class Logtivity
 
         if ($currentVersion && version_compare($currentVersion, '3.1.7', '<=')) {
             // Default for updating sites should be no behavior change
-            update_option('logtivity_app_verify_url', 0);
+            (new Logtivity_Options())->update(['logtivity_app_verify_url' => 0], false);
         }
 
         update_option('logtivity_version', $this->version);
@@ -294,20 +294,17 @@ class Logtivity
                 __('You have already entered an API Key for this site.', 'logtivity')
             );
         } elseif ($teamApi) {
-            $request = [
-                'method'   => 'POST',
-                // phpcs:ignore WordPressVIPMinimum.Performance.RemoteRequestTimeout.timeout_timeout -- one-off blocking call triggered directly by an admin registering their site, not a per-page-load request.
-                'timeout'  => 6,
-                'blocking' => true,
-                'body'     => [
+            $response = new Logtivity_Response(
+                '/sites',
+                [
                     'team_name' => $teamName,
                     'name'      => $siteName ?: get_bloginfo('name'),
                     'url'       => $url ?: home_url(),
                 ],
-                'cookies'  => [],
-            ];
-
-            $response = new Logtivity_Response($teamApi, '/sites', $request);
+                'POST',
+                true,
+                $teamApi
+            );
             if ($response->code == 200 && $response->error == false) {
                 $apikey   = $response->body['api_key'] ?? null;
                 $teamName = $response->body['team_name'] ?? '*unknown*';

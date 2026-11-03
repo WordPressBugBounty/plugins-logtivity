@@ -57,7 +57,7 @@ class Logtivity_Log_Index_Controller
                         '/logs',
                         [
                             'page'        => $this->getInput('page'),
-                            'action'      => $this->getInput('search_action'),
+                            'actions'     => $this->getInput('search_action'),
                             'context'     => $this->getInput('search_context'),
                             'action_user' => $this->getInput('action_user'),
                         ]

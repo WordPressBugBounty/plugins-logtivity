@@ -120,7 +120,7 @@ class Logtivity_Post extends Logtivity_Abstract_Logger
 
         // Post meta changes
 
-        if (get_option('logtivity_enable_post_meta_logging')) {
+        if ((new Logtivity_Options())->getOption('logtivity_enable_post_meta_logging')) {
             add_action('added_post_meta', [$this, 'added_post_meta'], 10, 4);
             add_action('updated_post_meta', [$this, 'updated_post_meta'], 10, 4);
             add_action('delete_post_meta', [$this, 'delete_post_meta'], 10, 4);
