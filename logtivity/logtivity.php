@@ -5,7 +5,7 @@
  * Plugin URI:        https://logtivity.io
  * Description:       Record activity logs and errors logs across all your WordPress sites.
  * Author:            Logtivity
- * Version:           3.3.12
+ * Version:           3.3.13
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       logtivity
@@ -39,7 +39,7 @@
 // phpcs:disable PSR1.Classes.ClassDeclaration.MissingNamespace
 
 if (!defined('LOGTIVITY_VERSION')) {
-    define('LOGTIVITY_VERSION', '3.3.12');
+    define('LOGTIVITY_VERSION', '3.3.13');
 }
 
 class Logtivity
